@@ -30,12 +30,13 @@ const S = {
       { go: 196 }, { wait: 45 }, // 穴の縁で待ってリンゴを先に飛ばす
       { jump: 'R', hold: 14 },
       { go: 318 }, { jump: 'R', hold: 12 }, // 偽看板の先のトゲを飛び越える
-      { go: 392 }, { jump: 'R', hold: 14 }, { go: 500 },
+      { go: 396 }, { jump: 'R', hold: 16, dj: 14, djHold: 12 }, { go: 500 }, // 見えないブロックの上を2段ジャンプで越える
     ],
   },
   '1-2': {
     from: 'S',
-    steps: [{ go: 58 }, { jump: 'R', hold: 10 }, { go: 104 }, { jump: 'R', hold: 12 }, { go: 160 }, { jump: 'R', hold: 10 }, { go: 290 }, { go: 330 }, { wait: 90 }, { go: 500 }],
+    steps: [{ go: 50 }, { jump: 'R', hold: 10 }, { go: 104 }, { jump: 'R', hold: 12 }, { go: 160 }, { jump: 'R', hold: 10 }, { go: 290 }, { go: 330 }, { wait: 90 },
+      { go: 404 }, { jump: 'R', hold: 16, dj: 20, djHold: 12 }, { go: 500 }], // 戻ってくる月を跳び越える
   },
   '1-3': {
     from: 'S',
@@ -60,7 +61,9 @@ const S = {
     from: 'S',
     steps: [
       { go: 96 }, { wait: 40 }, { go: 180 }, // ドッスン①を落とさせて、上がり始めたらくぐる
-      { go: 196 }, { wait: 200 }, // ドッスン②は二度落ちるので戻るまで待つ
+      { go: 196 }, // ドッスン②は二度落ちるので戻るまで待つ（その間に後ろから来るリンゴを跳び越える）
+      { until: (W, P) => W.ents.some((e) => e instanceof G.Fruit && e.cx < P.cx && e.cx > P.cx - 34), dir: 0 },
+      { jump: 0, hold: 12 }, { wait: 40 },
       { go: 278 }, { wait: 60 }, { go: 410 }, // ③は止まらず駆け抜ける
       { go: 420 },
     ],
@@ -74,6 +77,7 @@ const S = {
       { go: 276 }, { jump: 'L', hold: 12 }, // 石筍の上を飛ぶ
       { go: 206 }, { wait: 50 }, // 穴の手前で止まって③を先に落とさせる
       { go: 186 }, { jump: 'L', hold: 4 }, // 小ジャンプでベルトへ
+      { jump: 'L', hold: 7 }, { jump: 'L', hold: 7 }, // ベルトは本気を出すので低く跳んで渡る（天井はトゲ）
       { go: -20 },
     ],
     goal: 'left',
@@ -90,7 +94,7 @@ const S = {
   },
   '3-1': {
     from: 'S',
-    steps: [{ go: 276 }, { jump: 'L', hold: 12, steerFrames: 30 }, { go: 212 }, { jump: 'L', hold: 14 }, { go: 90 }, { until: (W, P) => W.ents.some((e) => e instanceof G.Spike && e.vx < 0 && e.x < P.cx + 70), dir: 0 }, { jump: 'L', hold: 16 }, { go: -20 }],
+    steps: [{ go: 276 }, { jump: 'L', hold: 12, steerFrames: 30 }, { go: 212 }, { jump: 'L', hold: 14 }, { go: 90 }, { until: (W, P) => W.ents.some((e) => e instanceof G.Spike && e.vx < 0 && e.x < P.cx + 70), dir: 0 }, { jump: 'L', hold: 16, dj: 28, djHold: 12 }, { go: -20 }], // 前から来るトゲは2段目で越える
     goal: 'left',
   },
   '3-2': {

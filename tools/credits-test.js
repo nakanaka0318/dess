@@ -38,7 +38,11 @@ for (; t < 60 * 40; t++) {
       }
       tx = best;
     }
-  } else if (P.onGround && P.y > 200) tx = 290;
+  } else if (P.onGround && P.y > 200) {
+    // 「THE END」の文字が落ちてくるまではその下から離れて待つ
+    const theEnd = W.ents.some((e) => e.alive && e instanceof G.BigText && e.text === 'THE END');
+    tx = theEnd || W.time < 30 ? 340 : 290;
+  }
   else if (P.onGround && P.y < 100) tx = 500;
   else tx = P.cx;
   const dx = tx - P.cx;

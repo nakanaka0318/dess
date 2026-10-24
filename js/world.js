@@ -743,7 +743,7 @@
       }
       if (P.alive) {
         const r = P.hitbox();
-        if (this.tileHazard(r)) this.kill(this.def.spikeCause || G.pickSpikeCause(this));
+        if (this.tileHazard(r)) this.kill(this.def.spikeCause || (this.def.spikeCauseFn && this.def.spikeCauseFn(this)) || G.pickSpikeCause(this));
         else {
           for (const e of this.ents) {
             if (e.alive && e.hazard && e.hits(r)) {

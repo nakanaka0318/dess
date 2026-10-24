@@ -49,7 +49,7 @@
   // AREA 1 はじまりの草原
   // =====================================================================
   R['1-1'] = {
-    hint: 'リンゴは近づくと動き出す。立ち止まって様子を見よう。',
+    hint: 'リンゴは近づくと動き出す。立ち止まって様子を見よう。2つ目の穴は2段ジャンプで高く越えよう。',
     area: 1,
     name: '1-1 はじまり',
     theme: 'grass',
@@ -99,11 +99,17 @@
       });
       // ③ 「安全」の看板の先で地面からトゲ
       W.popSpike(17, 11, 'u', [17, 9, 1, 3], { cause: '看板は嘘をつく。' });
+      // ④ 2つ目の穴の向こう半分には見えないブロック（ふつうに跳ぶと空中でぶつかって落ちる。2段ジャンプで上を越える）
+      for (let tx = 21; tx <= 22; tx++) W.block(tx, 9, 1, 1, { invisible: true, keep: true });
+    },
+    // 見えないブロックで頭を打ってから落ちた時だけ専用の死因
+    spikeCauseFn(W) {
+      return W.ents.some((e) => e instanceof G.Block && e.visible && e.y === 180) ? '見えないブロックにぶつかった。' : null;
     },
   };
 
   R['1-2'] = {
-    hint: '橋の4つ目は飛び越えよう。月が落ちたら転がり去るまで待とう。',
+    hint: '橋の4つ目は飛び越えよう。月は転がり去っても出口の手前で戻ってくる。跳び越えよう。',
     area: 1,
     name: '1-2 月が見ている',
     theme: 'grass',
@@ -155,11 +161,19 @@
           };
         });
       });
+      // 出口の手前：転がっていった月が戻ってくる
+      W.trigPx(400, 0, 80, 280, () => {
+        const back = W.moon(480 + 26, 240 - 22, { r: 22, keep: true, face: 'grin', cause: '月は戻ってくる。' });
+        back.vel(-3.4, 0);
+        back.offscreenKill = 80;
+        G.sfx('rumble');
+        W.say('ただいま', 440, 180, 50, {});
+      }, { cond: (P) => P.onGround });
     },
   };
 
   R['1-3'] = {
-    hint: 'トゲの手前で小ジャンプすると先に飛んでいく。右上の足場では一呼吸。',
+    hint: 'トゲの手前で小ジャンプすると先に飛んでいく。真ん中の足場はすぐ跳び、右上の足場では一呼吸。',
     area: 1,
     name: '1-3 天井に注意',
     theme: 'grass',
@@ -192,6 +206,18 @@
         js.vel(0, -6);
         G.sfx('pop');
       }, { cond: (P) => !P.onGround && Math.abs(P.cx - js.cx) < 48 && P.y > 150 });
+      // ①' 真ん中の足場は乗って少しすると抜け落ちる（次の足場へはすぐ跳ぶ）
+      const p2 = [W.tileToBlock(17, 8), W.tileToBlock(18, 8)];
+      let p2t = false;
+      for (const b of p2)
+        b.onStep = () => {
+          if (p2t) return;
+          p2t = true;
+          W.after(30, () => {
+            p2.forEach((q) => q.drop(0.5));
+            G.sfx('crumble');
+          });
+        };
       // ② 右上の足場に乗ると、少しして天井のトゲが落ちる（すぐ跳ぶと空中で刺さる）
       const cs = W.spike(17, 1, 'd', { cause: '着地したら一呼吸。' });
       W.trig(20, 4, 2, 2, () => {
@@ -234,7 +260,7 @@
   };
 
   R['1-4'] = {
-    hint: '本物のセーブは手前の1つだけ。トゲの壁より先に走り抜けよう。',
+    hint: 'セーブしたら立ち止まらない。本物は手前の1つだけ。トゲの壁より先に走り抜けよう。',
     area: 1,
     name: '1-4 にせもの',
     theme: 'grass',
@@ -262,6 +288,18 @@
       const f = W.mark('f');
       W.save(f.tx, f.ty, { fake: true }).cause = 'セーブポイントだと思った？';
       W.sign(5, 11, 'この先にも\nセーブポイントあり', { range: 30 });
+      // 本物のセーブ：セーブした瞬間、その真上からリンゴ
+      const real = W.ents.find((e) => e instanceof G.SavePoint && !e.fake);
+      if (real)
+        real.onSave = () => {
+          if (W.vars.saveApple) return;
+          W.vars.saveApple = true;
+          W.after(14, () => {
+            // 天井の中からだと当たる前に潰れてしまうので、天井のすぐ下から
+            const a = W.fruit(W.player.cx, 28, { cause: 'セーブした直後が一番あぶない。', splat: true });
+            a.vel(0, 7, 0, 0.5);
+          });
+        };
       // 偽セーブを越えるとトゲの壁が迫る
       const wall = [];
       W.trigPx(190, 0, 20, 280, () => {
@@ -345,7 +383,7 @@
   // AREA 2 ひみつの洞窟
   // =====================================================================
   R['2-1'] = {
-    hint: 'ドッスンは落ちて上がる途中にくぐろう。2つ目は二度落ちる。',
+    hint: 'ドッスンは落ちて上がる途中にくぐろう。2つ目は二度落ちる。待っている間は後ろにも注意。',
     area: 2,
     name: '2-1 落石注意',
     theme: 'cave',
@@ -377,13 +415,27 @@
       thwomp(W, 6, 5, { shake: 8, when: (P, b) => P.cx > b.x - 30 && P.cx < b.x + b.w + 8 });
       // ② 落ちて少し上がり、くぐろうとした所にもう一度落ちる
       thwomp(W, 11, 5, { shake: 4, double: 34, when: (P, b) => P.cx > b.x - 30 && P.cx < b.x + b.w });
+      // ①' 上ばかり見ていると、後ろからリンゴが転がってくる
+      W.trigPx(190, 0, 40, 280, () => {
+        W.after(50, () => {
+          const c = W.fruit(-10, 233, { cause: '上ばかり見ていた。', keep: true });
+          c.vel(2.3, 0);
+          c.tick = function () {
+            G.Fruit.prototype.tick.call(this);
+            if (this.cx > 400 && this.ay === 0) this.ay = 0.3;
+            if (this.y > 300) this.alive = false;
+          };
+          G.sfx('whoosh');
+        });
+      });
       // ③ 近づくと震えるだけ。安心して真下で止まると落ちてくる
       thwomp(W, 16, 5, { fake: 40, acc: 0.9, when: (P, b) => (b.faked ? P.cx > b.x + 20 && P.cx < b.x + b.w + 4 : P.cx > b.x - 40 && P.cx < b.x) });
     },
   };
 
   R['2-2'] = {
-    hint: '縦穴は真ん中を落ちよう。つららは一歩踏み込んで落としてから進もう。',
+    hint: '縦穴は真ん中を落ちよう。つららは一歩踏み込んで落としてから進もう。ベルトの上は低く跳んで渡ろう。',
+    spikeCauseFn: (W) => (W.vars.beltMad && W.player.cx < 200 ? 'ベルトコンベアが本気を出した。' : null),
     area: 2,
     name: '2-2 つらら',
     theme: 'cave',
@@ -414,7 +466,15 @@
         W.popSpike(tx, ty, d, [20, ty - 1, 3, 1], { cause: '壁ぎわは危ない。', frames: 3 });
       }
       // ベルトコンベア（右へ流れる）
-      W.block(2, 12, 6, 1, { style: 'conveyor', conveyor: 1.2, keep: true });
+      const belt = W.block(2, 12, 6, 1, { style: 'conveyor', conveyor: 1.2, keep: true });
+      // 乗ってしばらくすると本気を出す
+      W.run(function* () {
+        yield () => belt.rideT > 24;
+        belt.conveyor = 3.2;
+        W.vars.beltMad = true;
+        G.sfx('trap');
+        W.say('ギュイーン', 100, 200, 50, { plain: true, size: 10, color: '#ffcf4a' });
+      });
       // つらら① 普通に落ちる
       const i1 = W.spike(17, 8, 'd', { pal: 'ice', cause: 'つららが落ちてきた。' });
       W.trigPx(0, 0, 480, 280, () => i1.vel(0, 0, 0, 0.5), { cond: (P) => P.cx < i1.cx + 26 && P.y > 150 });
@@ -490,7 +550,7 @@
   };
 
   R['2-4'] = {
-    hint: 'リンゴの動きは毎回同じ。ハテナブロックは叩かなくていい。',
+    hint: 'リンゴの動きは毎回同じ。ハテナブロックは叩かなくていい。最後の穴は大きく跳んで、すぐ先の床も越えよう。',
     area: 2,
     name: '2-4 チェリーパーティ',
     theme: 'cave',
@@ -516,6 +576,8 @@
       W.decor(160, 220, 'crystal');
       W.decor(360, 220, 'mushroom');
       W.sign(19, 11, 'パーティ会場\nこちら ←');
+      // 最後の穴を越えて着地した所で床からトゲ
+      W.popSpike(3, 11, 'u', [3, 9, 1, 3], { cause: 'ゴール前で気がゆるんだ。', cond: (P) => P.onGround });
       const cherries = [
         [100, 60, 1.3, 1.0], [300, 150, -1.0, 1.25], [200, 200, 1.6, -0.7], [420, 40, -1.4, -1.1],
       ];
@@ -599,7 +661,7 @@
   // AREA 3 うそつき城
   // =====================================================================
   R['3-1'] = {
-    hint: '看板は本当とウソが交互。低い天井の下ではジャンプしない。',
+    hint: '看板は本当とウソが交互。低い天井の下ではジャンプしない。最後のトゲは前からも来る。',
     area: 3,
     name: '3-1 うそつき看板',
     theme: 'castle',
@@ -644,6 +706,13 @@
         const s = W.spikePx(500, 220, 'l', { cause: 'うしろに注意と書いてあったのに。' });
         s.vel(-5, 0);
         G.sfx('whoosh');
+        // 前から来ないとは書いていない（後ろのトゲが通り過ぎた直後）
+        W.run(function* () {
+          yield () => s.x + s.w < W.player.x - 6;
+          const f = W.spikePx(-40, 220, 'r', { cause: '前に注意とは書いていなかった。' });
+          f.vel(4.5, 0);
+          G.sfx('whoosh');
+        });
       });
     },
   };
@@ -767,7 +836,7 @@
   };
 
   R['3-4'] = {
-    hint: 'エンドロールの行に乗り、天井が近づいたら下の行へ降りよう。',
+    hint: '着いたらすぐ右のセーブの方へ。エンドロールの行に乗り、天井が近づいたら下の行へ降りよう。',
     area: 3,
     name: '3-4 THE END',
     theme: 'castle',
@@ -820,6 +889,23 @@
           const t2 = W.text(240, 92, 'Thank you for playing!', { size: 12, color: '#ffffff' });
           yield 60;
           G.music('ending');
+          // 「THE END」の文字が落ちてくる
+          const hb = W.hbox(240 - 62, t1.y - 14, 124, 26, { cause: 'THE END の文字に潰された。本当に終わった。' });
+          hb.visible = false;
+          hb.offscreenKill = false;
+          hb.vel(0, 2, 0, 0.6);
+          W.run(function* () {
+            for (;;) {
+              t1.y = hb.y + 14;
+              if (hb.y + hb.h >= 240) break;
+              yield 1;
+            }
+            hb.alive = false;
+            t1.alive = false;
+            W.shake = 16;
+            G.sfx('thud');
+            W.burst(240, 236, 40, ['#ffe9a8', '#ffcf4a', '#ffffff'], 3, { up: 2, g: 0.2, life: 40 });
+          });
           yield 120;
           t1.alpha = t2.alpha = 0;
           W.say('スタッフロールを\nご覧ください', 240, 150, 120, {});

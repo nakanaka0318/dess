@@ -23,6 +23,16 @@ const NAIVE = [
   { id: '2-2', name: '穴を跳ぶとつらら', from: 'S', steps: [{ go: 378 }, { go: 372 }, { go: 386 }, { wait: 30 }, { go: 312 }, { go: 330 }, { wait: 60 }, { go: 276 }, { jump: 'L', hold: 12 }, { go: 186 }, { jump: 'L', hold: 4 }, { go: -20 }], expect: /ジャンプした瞬間/ },
   { id: '3-2', name: '上に落ちるリンゴ', base: '3-2', cut: 'wait60', expect: /さかさま/ },
   { id: '4-3', name: '月のリンゴ', base: '4-3', cut: 'wait90', expect: /月からの贈り物/ },
+  // 1面に追加した理不尽
+  { id: '1-1', name: '見えないブロック', from: '@', steps: [{ go: 142 }, { wait: 40 }, { go: 196 }, { wait: 45 }, { jump: 'R', hold: 14 }, { go: 318 }, { jump: 'R', hold: 12 }, { go: 392 }, { jump: 'R', hold: 20 }, { go: 500 }], expect: /見えない/ },
+  { id: '1-2', name: '戻ってくる月', from: 'S', steps: [{ go: 50 }, { jump: 'R', hold: 10 }, { go: 104 }, { jump: 'R', hold: 12 }, { go: 160 }, { jump: 'R', hold: 10 }, { go: 290 }, { go: 330 }, { wait: 90 }, { go: 500 }], expect: /戻って/ },
+  { id: '1-3', name: '抜ける足場', from: 'S', steps: [{ go: 92 }, { jump: 0, hold: 6 }, { wait: 30 }, { go: 214 }, { jump: 'R', hold: 14, steerFrames: 24 }, { go: 272 }, { jump: 'R', hold: 16, dj: 18, djHold: 14, steerFrames: 50 }, { wait: 40 }, { go: 374 }], expect: /トゲ|刺さ|痛い|鋭い|仲良く|触れて/ },
+  { id: '1-4', name: 'セーブ直後のリンゴ', enter: { x: 86, y: 262, vy: -5 }, steps: [{ wait: 90 }], expect: /セーブした直後/ },
+  { id: '2-1', name: '後ろから転がるリンゴ', from: 'S', steps: [{ go: 96 }, { wait: 40 }, { go: 180 }, { go: 196 }, { wait: 200 }], expect: /上ばかり/ },
+  { id: '2-2', name: '本気のベルト', from: 'S', steps: [{ go: 378 }, { go: 372 }, { go: 386 }, { wait: 30 }, { go: 312 }, { go: 330 }, { wait: 60 }, { go: 276 }, { jump: 'L', hold: 12 }, { go: 206 }, { wait: 50 }, { go: 186 }, { jump: 'L', hold: 4 }, { go: -20 }], expect: /本気を出した/ },
+  { id: '2-4', name: '着地点のトゲ', enter: { x: 146, y: 226 }, steps: [{ jump: 'L', hold: 16 }, { go: -20 }], goal: 'left', expect: /気がゆるんだ/ },
+  { id: '3-1', name: '前からのトゲ', base: '3-1', replaceJump: { jump: 'L', hold: 16 }, expect: /前に注意/ },
+  { id: '3-4', name: 'THE END の文字', enter: { x: 206, y: 262, vy: -5 }, steps: [{ wait: 240 }], expect: /THE END/ },
 ];
 
 // human.js の手順を途中まで使う（cut: 指定した wait を消してすぐ進む）
@@ -34,6 +44,10 @@ function derive(n) {
     const i = steps.findIndex((s) => s.wait === w);
     steps.splice(i, 1);
   }
+  if (n.replaceJump) {
+    const i = steps.map((s) => !!s.dj).lastIndexOf(true);
+    steps[i] = n.replaceJump;
+  }
   if (n.replaceTail) {
     const i = steps.findIndex((s) => s.go === 278);
     steps = steps.slice(0, i).concat(n.replaceTail);
@@ -44,7 +58,7 @@ function derive(n) {
 // 人が「何か動いた」と気づいてから止まるまでのフレーム数（0.25秒）
 const REACT = 15;
 function evalNaive(n, N) {
-  const script = Object.assign(n.base ? derive(n) : { from: n.from, steps: n.steps, goal: n.goal }, { react: REACT });
+  const script = Object.assign(n.base ? derive(n) : { from: n.from, steps: n.steps, goal: n.goal, enter: n.enter }, { react: REACT });
   const rng = new G.RNG(7);
   let hit = 0;
   const seen = {};
@@ -63,7 +77,7 @@ const only = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 let bad = 0;
 for (const n of NAIVE) {
   if (only.length && !only.includes(n.id)) continue;
-  const script = Object.assign(n.base ? derive(n) : { from: n.from, steps: n.steps, goal: n.goal }, { react: REACT });
+  const script = Object.assign(n.base ? derive(n) : { from: n.from, steps: n.steps, goal: n.goal, enter: n.enter }, { react: REACT });
   const rng = new G.RNG(7);
   let hit = 0;
   const N = 20;

@@ -263,6 +263,7 @@
       this.state = 'saved';
       for (const e of W.ents) if (e instanceof SavePoint && e !== this && e.state === 'saved') e.state = 'idle';
       if (W.game && W.game.save) W.game.save(W.id, this.x / T, this.y / T);
+      if (this.onSave) this.onSave();
       G.sfx('save');
       W.burst(this.cx, this.cy, 14, ['#7dffb0', '#ffffff', '#ffe066'], 2, { g: 0, life: 24 });
       W.say('セーブしました', this.cx, this.y - 6, 50, { plain: true, size: 8, color: '#9affc0' });
