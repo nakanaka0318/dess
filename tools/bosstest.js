@@ -7,13 +7,13 @@ G.autoShot = true;
 const args = process.argv.slice(2);
 const hazard = args.includes('--hazard');
 const rooms = args.filter((a) => !a.startsWith('--'));
-const targets = rooms.length ? rooms : ['2-B', '4-B', '5-B', '6-B'];
-const ENTRY = { '2-B': 'right', '5-B': 'left', '6-B': 'left' }; // 隣の部屋から入ってくる向き
+const targets = rooms.length ? rooms : ['2-B', '4-B', '5-B', '6-B', '7-B', '8-B'];
+const ENTRY = { '2-B': 'right', '5-B': 'left', '6-B': 'left', '7-B': 'left', '8-B': 'below' }; // 隣の部屋から入ってくる向き
 
 function run(id, seed) {
   G.god = !hazard;
   const flags = {};
-  const r = new Runner(G, id, { spawn: ENTRY[id] ? { x: 30, y: 226, face: 1 } : spawnAt(G, id, 'S'), flags, respawn: false });
+  const r = new Runner(G, id, { spawn: ENTRY[id] ? { x: ENTRY[id] === 'below' ? 100 : 30, y: 226, face: 1 } : spawnAt(G, id, 'S'), flags, respawn: false });
   if (ENTRY[id] === 'right') {
     // 右隣の部屋から入ってくる想定
     r.W.player.x = 440;
@@ -42,7 +42,14 @@ function run(id, seed) {
     const inp = {};
     if (b && !b.defeated) {
       let tx, platform;
-      if (id === '5-B' || id === '6-B') {
+      if (id === '7-B') {
+        // 穴の真下を避けて、横に離れて撃つ（弾は吸い寄せられて当たる）
+        const side = P.cx < b.cx ? -1 : 1;
+        tx = G.clamp(b.cx + side * 150, 30, 450);
+        if (b.cx + side * 150 < 30 || b.cx + side * 150 > 450) tx = b.cx - side * 150;
+      } else if (id === '8-B') {
+        tx = 220;
+      } else if (id === '5-B' || id === '6-B') {
         // 距離を取って撃つ。床が危ない時（マグマ・地面を転がる太陽）は足場へ
         const lava = W.ents.some((e) => e.alive && e instanceof G.Lava);
         const low = b instanceof G.SunBoss && b.y + b.h > 200;

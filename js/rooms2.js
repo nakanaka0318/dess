@@ -621,4 +621,521 @@
       G.BOSSES.sun(W, opts);
     },
   };
+  // =====================================================================
+  // AREA 7 さかさまの宇宙
+  // =====================================================================
+  R['7-1'] = {
+    hint: '低重力なので跳びすぎると天井のトゲに届く。最初の穴の手前で一度跳んで重力を戻させ、元に戻ってから渡ろう。',
+    area: 7,
+    name: '7-1 無重力',
+    theme: 'void',
+    bg: 'void',
+    exits: { right: '7-2' },
+    map: [
+      '########################',
+      '########################',
+      '########################',
+      '########################',
+      '#vvvvvvvvvvvvvvvvvvvvvv#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#.......................',
+      '#.......................',
+      '#@.S.......s............',
+      '#####.....####.....#####',
+      '#####^^^^^####^^^^^#####',
+    ],
+    spikeCauseFn: (W) => (W.gravScale > 0.9 && W.player.cx < 220 ? '重力が急に戻った。' : null),
+    setup(W) {
+      W.gravScale = 0.45;
+      W.sign(4, 11, 'ここは無重力\n（跳びすぎ注意）', { range: 30 });
+      W.vars.gLabel = 0;
+      // ① 最初の穴を跳ぶと重力が戻る（60フレーム）
+      W.trigPx(84, 0, 116, 280, () => {
+        W.gravScale = 1;
+        W.vars.gLabel = 60;
+        G.sfx('trap');
+        W.say('GRAVITY ×1.0', 150, 130, 50, { plain: true, size: 11, color: '#ff9af0' });
+        W.after(60, () => (W.gravScale = 0.45));
+      }, { cond: (P) => !P.onGround });
+      W.onStep = () => {
+        if (W.vars.gLabel > 0) W.vars.gLabel--;
+      };
+      // ② 2つ目の穴の上を漂うトゲ
+      for (const [x, ph] of [[296, 0], [344, 0.5]]) {
+        const sp = W.spikePx(x, 160, 'u', { keep: true, cause: '宇宙をただようトゲ。', pal: 'crystal' });
+        sp.base = 160;
+        sp.ph = ph;
+        sp.tick = function () {
+          G.Spike.prototype.tick.call(this);
+          this.y = this.base + Math.sin(W.time * 0.035 + this.ph) * 46;
+        };
+      }
+      // ③ 出口の手前でスペースデブリ
+      W.trigPx(400, 0, 30, 280, () => {
+        const r = W.fruit(500, 232, { kind: 'rock', r: 7, cause: 'スペースデブリが飛んできた。' });
+        r.vel(-4.2, 0);
+        G.sfx('whoosh');
+      }, { cond: (P) => P.onGround });
+    },
+    drawFg(ctx, W) {
+      if (W.gravScale > 0.9) G.Render.drawGravNote(ctx, W);
+    },
+  };
+
+  R['7-2'] = {
+    hint: '左右反転は看板より手前から始まる。反転中は左を押すと右へ進む。反転は穴の手前で解けるので、解けてから普通に跳ぼう。',
+    area: 7,
+    name: '7-2 さかさま回廊',
+    theme: 'void',
+    bg: 'void',
+    exits: { left: '7-1', right: '7-3' },
+    map: [
+      '########################',
+      '########################',
+      '#vvvvvvvvvvvvvvvvvvvvvv#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '........................',
+      '........................',
+      '..S..........s..........',
+      '#####..####..####...####',
+      '#####^^####^^####^^^####',
+    ],
+    spikeCauseFn: (W) => {
+      const x = W.player.cx;
+      if (x < 150) return W.vars.revSeen ? '左右反転は看板より手前から始まっていた。' : null;
+      if (x > 330) return '反転は空中で解けた。';
+      return W.reverse ? 'さかさまの世界で迷子になった。' : null;
+    },
+    setup(W) {
+      W.sign(9, 11, 'ここから左右反転 →', { range: 30 });
+      W.sign(16, 11, '← 反転おわり', { range: 24 });
+      // ① 反転は看板の手前（最初の穴を越えた所）から始まり、穴の手前で解ける
+      W.onStep = () => {
+        const P = W.player;
+        if (!P.alive) return;
+        if (!W.reverse && P.onGround && P.cx > 146 && P.cx < 200 && !W.vars.revDone) {
+          W.reverse = true;
+          W.vars.revSeen = true;
+          G.sfx('flip');
+          W.say('左右反転！', P.cx, P.y - 8, 40, { plain: true, size: 10, color: '#ff9af0' });
+        }
+        if (W.reverse && P.cx >= 338) {
+          W.reverse = false;
+          W.vars.revDone = true;
+          G.sfx('flip');
+        }
+      };
+      // ② 反転中に天井のトゲが1本落ちてくる
+      const cs = W.spike(14, 2, 'd', { cause: '天井まで反転していた。', pal: 'crystal' });
+      W.setTile(14, 2, 0);
+      W.trigPx(254, 0, 26, 280, () => {
+        cs.vel(0, 4, 0, 1.0);
+        G.sfx('trap');
+      });
+    },
+    drawFg(ctx, W) {
+      if (W.reverse) G.Render.drawReverseNote(ctx, W);
+    },
+  };
+
+  R['7-3'] = {
+    hint: '暗闇は光った瞬間に足場を覚えよう。真ん中の低い足場は乗ると抜ける。最後の足場では黒いリンゴに注意。',
+    spikeCauseFn: (W) => (W.vars.midGone ? '暗闇の足場は抜けるもの。' : '暗くて見えなかった。'),
+    area: 7,
+    name: '7-3 闇の星座',
+    theme: 'void',
+    bg: 'void',
+    exits: { left: '7-2', right: '7-B' },
+    map: [
+      '########################',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#.........---..........#',
+      '#......................#',
+      '...........---..........',
+      '.....---.........---....',
+      '..S.....................',
+      '####^^^^^^^^^^^^^^^^####',
+      '########################',
+    ],
+    setup(W) {
+      W.vars.flashT = 0;
+      // 100フレームごとに一瞬だけ明るくなる
+      W.run(function* () {
+        yield 30;
+        for (;;) {
+          W.vars.flashT = 14;
+          G.sfx('reveal');
+          yield 100;
+        }
+      });
+      W.onStep = () => {
+        if (W.vars.flashT > 0) W.vars.flashT--;
+      };
+      // ① 真ん中の低い足場（11〜13列目）は乗ると抜ける。上の足場（10〜12列目）が本物
+      const mids = [11, 12, 13].map((tx) => W.tileToBlock(tx, 9, { oneway: true }));
+      let gone = false;
+      for (const b of mids)
+        b.onStep = () => {
+          if (gone) return;
+          gone = true;
+          W.vars.midGone = true;
+          W.after(8, () => mids.forEach((m) => m.drop(0.5)));
+        };
+      // ② 最後の足場の上を黒いリンゴがゆっくり往復する（光った時と近くでしか見えない）
+      const dark = W.fruit(370, 180, { kind: 'dark', r: 6, keep: true, cause: '暗闇に黒いリンゴ。見えるわけがない。' });
+      dark.tick = function () {
+        this.x = 364 + Math.sin(W.time * 0.03) * 34 - this.r;
+      };
+      W.sign(1, 11, '暗いので\n足もとに注意', { range: 30 });
+    },
+    drawFg(ctx, W) {
+      G.Render.drawDarkness(ctx, W, W.vars.flashT > 0 ? 0.15 : 0.93);
+    },
+  };
+
+  R['7-B'] = {
+    hint: '吸い込まれないよう外側へ歩き続けよう。吐き出しの後は向きを変えて逃げる。倒しても最後に吐き出す物がある。',
+    area: 7,
+    name: '中ボス ブラックホール',
+    theme: 'void',
+    bg: 'void',
+    music: null,
+    exits: { left: '7-3', right: '8-1' },
+    edgeOk: ['right'], // 右の壁は撃破後に開く
+    goal: 'right',
+    map: [
+      '########################',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#..----..........----..#',
+      '.......................#',
+      '.......................#',
+      '.......................#',
+      '########################',
+      '########################',
+    ],
+    setup(W, opts) {
+      const openRight = (fx) => {
+        for (let ty = 9; ty <= 11; ty++) W.setTile(23, ty, 0);
+        if (fx) {
+          W.burst(470, 200, 30, ['#c070ff', '#f0c0ff', '#ffffff'], 2.5, { g: 0.15 });
+          G.sfx('crumble');
+        }
+      };
+      if (W.game && W.game.flags.holeDead) {
+        openRight(false);
+        W.save(20, 11);
+        W.sign(18, 11, '静かになった。\nこの先、ニュートンの庭');
+        return;
+      }
+      W.closeGate = () => {
+        const g = W.block(0, 6, 1, 3, { style: 'gate', keep: true });
+        g.tweenTo(g.x, 180, 18, 'outBounce');
+        G.sfx('stomp');
+      };
+      G.BOSSES.blackhole(W, opts);
+      W.onBossCleared = () => {
+        openRight(true);
+        W.save(20, 11);
+      };
+    },
+  };
+
+  // =====================================================================
+  // AREA 8 ニュートンの庭
+  // =====================================================================
+  R['8-1'] = {
+    hint: '1本目の木は一歩入って戻り、リンゴを先に落とそう。大きな木は撃つと穴の上に倒れて橋になる。丸太の上ではリンゴを跳び越えよう。',
+    area: 8,
+    name: '8-1 ニュートンの庭',
+    theme: 'garden',
+    bg: 'garden',
+    exits: { left: '7-B', right: '8-2' },
+    edgeOk: ['left'], // 7-B の右の壁は撃破後に開く
+    map: [
+      '#.......................',
+      '#.......................',
+      '#.......................',
+      '#.......................',
+      '#.......................',
+      '#.......................',
+      '#.......................',
+      '#.......................',
+      '#.......................',
+      '........................',
+      '........................',
+      '..S.....................',
+      '##########........######',
+      '##########^^^^^^^^######',
+    ],
+    spikeCauseFn: (W) => (W.vars.bridge ? null : '跳べる距離ではない。'),
+    // 検証ソルバー用の距離の目安（ゲームには影響しない）：まず木を撃って倒し、それから右へ
+    solverH(W) {
+      const P = W.player;
+      if (W.vars.bridge) return 480 - P.cx;
+      const tree = W.ents.find((e) => e instanceof BigTree);
+      if (!tree) return 600;
+      if (tree.state !== 'stand') return 700 - tree.rot * 150 + Math.abs(P.cx - 80) * 0.2; // 倒れきるまで待つ
+      let h = 1000 + tree.hp * 200 + Math.abs(P.cx - 150);
+      for (const b of W.bullets) if (!b.hostile && b.vx > 0 && b.x < tree.x && b.y > tree.y + 60) h -= 60;
+      return h;
+    },
+    setup(W) {
+      W.decor(20, 200, 'hedge');
+      W.decor(440, 200, 'hedge');
+      W.sign(5, 11, 'ニュートンの庭\n（リンゴに注意）', { range: 30 });
+      // ① 1本目の木：真下に来ると一瞬でリンゴが落ちる
+      W.decor(80, 100, 'appletree', { h: 140 });
+      const a1 = W.fruit(112, 132, { cause: 'リンゴは落ちる。ニュートンもそう言っていた。', splat: true });
+      W.trigPx(98, 0, 30, 280, () => a1.vel(0, 4, 0, 1.2));
+      // ② 大きな木：撃つと穴の上に倒れて橋になる。近づくとリンゴを横に飛ばしてくる
+      const tree = W.add(new BigTree(W, 182, 240));
+      W.trigPx(130, 0, 20, 280, () => {
+        const a = W.fruit(176, 232, { cause: 'リンゴは横にも落ちる。' });
+        a.vel(-5, 0);
+        G.sfx('whoosh');
+      }, { cond: (P) => P.onGround });
+      tree.onFall = () => {
+        W.vars.bridge = true;
+        W.block(10, 12, 8, 1, { oneway: true, keep: true, style: 'log' }).h = 8;
+        // ③ 丸太に乗ると、向こう端からリンゴが転がってくる
+        W.trigPx(196, 0, 30, 280, () => {
+          const r = W.fruit(370, 233, { cause: '丸太の上をリンゴが転がってきた。' });
+          r.vel(-2.4, 0);
+          G.sfx('whoosh');
+        }, { cond: (P) => P.onGround });
+      };
+      W.sign(8, 11, '木こり募集中', { range: 24 });
+    },
+  };
+
+  // 撃つと倒れる大きな木（倒れた先が橋になる）
+  class BigTree extends Ent {
+    constructor(W, x, floorY) {
+      super(W, x - 8, floorY - 180, 16, 180);
+      this.shootable = true;
+      this.hp = 4;
+      this.rot = 0;
+      this.layer = -0.7;
+      this.state = 'stand';
+      this.hurtT = 0;
+    }
+    shotBox() {
+      return { x: this.x - 4, y: this.y + 60, w: this.w + 8, h: 120 };
+    }
+    onShot() {
+      if (this.state !== 'stand') return false;
+      this.hp--;
+      this.hurtT = 4;
+      G.sfx('hit');
+      if (this.hp <= 0) {
+        this.state = 'fall';
+        G.sfx('crumble');
+        this.W.say('メキメキ…', this.cx, this.y + 40, 40, { plain: true, size: 10, color: '#c0ff90' });
+      }
+      return true;
+    }
+    tick() {
+      if (this.hurtT > 0) this.hurtT--;
+      if (this.state === 'fall') {
+        this.rot = Math.min(Math.PI / 2, this.rot + 0.008 + this.rot * 0.06);
+        if (this.rot >= Math.PI / 2) {
+          this.state = 'down';
+          this.W.shake = 16;
+          G.sfx('stomp');
+          this.W.burst(this.x + 180, 236, 30, ['#3a8a3a', '#7ad05a', '#8a5a2a'], 2.5, { up: 2, g: 0.15, life: 30 });
+          if (this.onFall) this.onFall();
+        }
+      }
+    }
+    draw(ctx) {
+      G.Render.drawBigTree(ctx, this);
+    }
+  }
+
+  R['8-2'] = {
+    hint: '重力が強いので2段ジャンプで渡ろう。リンゴは引き寄せられてくるので、一度左へ逃げて落ちるのを待とう。',
+    area: 8,
+    name: '8-2 万有引力',
+    theme: 'garden',
+    bg: 'garden',
+    exits: { left: '8-1', right: '8-3' },
+    map: [
+      '.......................#',
+      '.......................#',
+      '.......................#',
+      '.......................#',
+      '.......................#',
+      '.......................#',
+      '.......................#',
+      '.......................#',
+      '.......................#',
+      '........................',
+      '........................',
+      '..S.......s.............',
+      '######...#####...####..#',
+      '######^^^#####^^^####^^#',
+    ],
+    spikeCauseFn: () => '重力に負けた。',
+    setup(W) {
+      W.gravScale = 1.3;
+      W.sign(4, 11, 'この先 重力強め', { range: 30 });
+      // リンゴは近づくとプレイヤーに引き寄せられ、しばらくすると普通に落ちる
+      for (const x of [170, 300, 430]) {
+        W.decor(x - 40, 0, 'branch');
+        const a = W.fruit(x, 28, { keep: true, cause: '万有引力の法則。' });
+        a.state = 'hang';
+        a.tick = function () {
+          G.Fruit.prototype.tick.call(this);
+          const P = W.player;
+          if (this.state === 'hang' && P.alive && Math.abs(P.cx - this.cx) < 80) {
+            this.state = 'pull';
+            this.pullT = 0;
+            G.sfx('charge');
+          }
+          if (this.state === 'pull') {
+            const dx = P.cx - this.cx,
+              dy = P.cy - this.cy;
+            const d = Math.hypot(dx, dy) || 1;
+            this.vx += (dx / d) * 0.09;
+            this.vy += (dy / d) * 0.09;
+            const v = Math.hypot(this.vx, this.vy);
+            if (v > 1.5) {
+              this.vx *= 1.5 / v;
+              this.vy *= 1.5 / v;
+            }
+            if (++this.pullT > 110) {
+              this.state = 'fall';
+              this.vel(0, 0, 0, 0.3);
+            }
+          }
+          if (this.y > 300) this.alive = false;
+        };
+      }
+    },
+  };
+
+  R['8-3'] = {
+    hint: 'セーブポイントは撃って確かめよう（本物は1つ）。手紙の前では立ち止まらない。最後の足場ではリンゴが落ちてから跳ぼう。',
+    area: 8,
+    name: '8-3 最後のセーブ',
+    theme: 'garden',
+    bg: 'garden',
+    exits: { left: '8-2', up: '8-B' },
+    goal: 'up',
+    map: [
+      '#...####################',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#--....................#',
+      '#......................#',
+      '#......................#',
+      '#...--.................#',
+      '#......................#',
+      '.......................#',
+      '..--...................#',
+      '.......................#',
+      '########################',
+      '########################',
+    ],
+    setup(W) {
+      W.sign(20, 11, '本物のセーブは\nひとつだけ', { range: 30 });
+      // ① 5つのセーブのうち本物は1つ（14列目）。偽物に触れると爆発
+      for (const tx of [6, 9, 12, 14, 17]) {
+        const sp = W.save(tx, 11, { fake: tx !== 14 });
+        if (sp.fake) sp.cause = 'ハズレ。セーブポイントは撃って確かめよう。';
+      }
+      // ② 手紙を読んでいると花火が上がり、火の粉が降ってくる
+      W.sign(4, 11, 'ここまで来たあなたへ\nおめでとう！', { range: 26, kind: 'letter' });
+      let read = 0,
+        fired = false;
+      W.onStep = () => {
+        const P = W.player;
+        if (fired || !P.alive) return;
+        if (Math.abs(P.cx - 90) < 26 && P.onGround) read++;
+        else read = 0;
+        if (read > 40) {
+          fired = true;
+          G.sfx('fanfare');
+          for (let i = 0; i < 3; i++) {
+            const x = P.cx + (i - 1) * 24;
+            const rk = W.fruit(x, 250, { kind: 'spark', r: 3, cause: '祝福の花火に焼かれた。' });
+            rk.vel(0, -6, 0, 0.12);
+            rk.tick = function () {
+              if (this.vy >= -0.5 && this.alive) {
+                this.alive = false;
+                G.sfx('explode');
+                for (let k = 0; k < 8; k++) {
+                  const a = (k / 8) * Math.PI * 2;
+                  const sp = W.fruit(this.cx, this.cy, { kind: 'spark', r: 3, cause: '祝福の花火に焼かれた。' });
+                  sp.vel(Math.cos(a) * 1.4, Math.sin(a) * 1.4 - 0.5, 0, 0.06);
+                }
+              }
+            };
+          }
+        }
+      };
+      // ③ 最後の足場に乗ると、出口からリンゴが落ちてくる
+      W.trigPx(20, 60, 40, 30, () => {
+        W.after(16, () => {
+          const a = W.fruit(50, -10, { cause: 'ラスボスの前の前座。' });
+          a.vel(0, 4, 0, 0.6);
+          G.sfx('whoosh');
+        });
+      }, { cond: (P) => P.onGround });
+    },
+  };
+
+  R['8-B'] = {
+    hint: '重力が反転したら天井に立つ。根っこの波は跳び、葉っぱの嵐は低い所で。幹の顔を撃とう。',
+    area: 8,
+    name: 'ラスボス ニュートンの樹',
+    theme: 'garden',
+    bg: 'garden',
+    music: null,
+    exits: { down: '8-3' },
+    goal: 'boss',
+    map: [
+      '########################',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#..----.....----.......#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#...####################',
+      '#...####################',
+    ],
+    setup(W, opts) {
+      W.sealFloor = () => {
+        for (let tx = 1; tx <= 3; tx++) for (let ty = 12; ty <= 13; ty++) W.setTile(tx, ty, 1);
+        W.exits.down = null;
+      };
+      G.BOSSES.tree(W, opts);
+    },
+  };
 })();

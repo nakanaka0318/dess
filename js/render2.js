@@ -506,4 +506,313 @@
     circle(ctx, cx, top - 2, Math.max(1, fr * 0.5));
     ctx.restore();
   };
+  // =====================================================================
+  // 3面
+  // =====================================================================
+  Object.assign(G.THEMES, {
+    void: {
+      solid: { base: '#3a2a5a', dk: '#22183a', lt: '#5a4a8a', edge: '#0c0818', top: '#c070ff', topLt: '#f0c0ff', topDk: '#7a3ab0' },
+      alt: { base: '#1a4a5a', dk: '#0c2a36', lt: '#3ab0c8' },
+      plat: { base: '#e0d0ff', dk: '#8a7ab0', lt: '#ffffff' },
+    },
+    garden: {
+      solid: { base: '#5a3a24', dk: '#3e2616', lt: '#7a5232', edge: '#1e120a', top: '#4cb43c', topLt: '#9ae86a', topDk: '#2e7a2a' },
+      alt: { base: '#3a7a3a', dk: '#22562a', lt: '#5aa04a' },
+      plat: { base: '#a87a4a', dk: '#5a3a1a', lt: '#d8a870' },
+    },
+  });
+
+  G.BGS.void = function (ctx, W, t) {
+    ctx.drawImage(
+      staticBg('void', (x) => {
+        grad(x, ['#08031a', '#140830', '#20103e']);
+      }),
+      0,
+      0
+    );
+    // 動くグリッドと星
+    ctx.strokeStyle = 'rgba(192,112,255,0.10)';
+    ctx.lineWidth = 1;
+    const off = (t * 0.3) % 40;
+    for (let x = -40 + off; x < SW; x += 40) {
+      ctx.beginPath();
+      ctx.moveTo(Math.round(x) + 0.5, 0);
+      ctx.lineTo(Math.round(x) + 0.5, SH);
+      ctx.stroke();
+    }
+    for (let y = -40 + off; y < SH; y += 40) {
+      ctx.beginPath();
+      ctx.moveTo(0, Math.round(y) + 0.5);
+      ctx.lineTo(SW, Math.round(y) + 0.5);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 70; i++) {
+      const x = hash2(i, 1, 21) * SW,
+        y = (hash2(i, 2, 21) * SH - t * 0.1 * (0.3 + hash2(i, 3, 21)) + SH * 4) % SH;
+      const tw = Math.sin(t * 0.06 + i);
+      ctx.fillStyle = tw > 0.4 ? '#ffffff' : '#a090e0';
+      ctx.fillRect(Math.round(x), Math.round(y), 1, 1);
+    }
+  };
+  G.BGS.garden = function (ctx, W, t) {
+    ctx.drawImage(
+      staticBg('garden', (x) => {
+        grad(x, ['#0c1630', '#1a2c4a', '#2a4a5a']);
+        for (let i = 0; i < 60; i++) {
+          x.fillStyle = hash2(i, 5, 31) > 0.7 ? '#ffffff' : '#8aa0d0';
+          x.fillRect(Math.round(hash2(i, 1, 31) * SW), Math.round(hash2(i, 2, 31) * 140), 1, 1);
+        }
+        hills(x, 200, 12, '#1a3a2a', 2.1, 0.013);
+        // 遠くの大きなリンゴの木
+        x.fillStyle = '#12301e';
+        x.fillRect(236, 90, 10, 120);
+        for (const [cx, cy, r] of [[240, 80, 46], [200, 96, 30], [282, 96, 30]]) {
+          x.beginPath();
+          x.arc(cx, cy, r, 0, Math.PI * 2);
+          x.fill();
+        }
+        x.fillStyle = '#5a1a2a';
+        for (let i = 0; i < 14; i++) x.fillRect(196 + Math.round(hash2(i, 7, 31) * 90), 50 + Math.round(hash2(i, 8, 31) * 70), 3, 3);
+        hills(x, 222, 8, '#14301e', 4.2, 0.02);
+      }),
+      0,
+      0
+    );
+    // ほたる
+    for (let i = 0; i < 10; i++) {
+      const x = (hash2(i, 9, 33) * SW + Math.sin(t * 0.02 + i) * 20 + SW) % SW;
+      const y = 120 + hash2(i, 8, 33) * 100 + Math.cos(t * 0.03 + i * 2) * 10;
+      ctx.fillStyle = `rgba(220,255,140,${0.3 + Math.sin(t * 0.1 + i) * 0.3})`;
+      ctx.fillRect(Math.round(x), Math.round(y), 1, 1);
+    }
+  };
+
+  Object.assign(G.DECOR, {
+    hedge(ctx, d, x, y) {
+      ctx.fillStyle = '#1f5a2a';
+      ctx.fillRect(x, y + 6, 24, 14);
+      ctx.fillStyle = '#2f7a3a';
+      for (let i = 0; i < 4; i++) circle(ctx, x + 4 + i * 6, y + 7, 5);
+    },
+    appletree(ctx, d, x, y) {
+      const h = d.o.h || 140;
+      ctx.fillStyle = '#5a3418';
+      ctx.fillRect(x + 24, y + 50, 12, h - 50);
+      ctx.fillStyle = '#7a4a24';
+      ctx.fillRect(x + 26, y + 50, 3, h - 50);
+      const blobs = [[30, 30, 28], [10, 40, 18], [50, 40, 18], [30, 12, 18]];
+      ctx.fillStyle = '#1f6a2a';
+      for (const b of blobs) circle(ctx, x + b[0], y + b[1] + 1, b[2]);
+      ctx.fillStyle = '#2f9a3a';
+      for (const b of blobs) circle(ctx, x + b[0], y + b[1], b[2] - 1);
+      ctx.fillStyle = '#c8102e';
+      for (let i = 0; i < 6; i++) circle(ctx, x + 8 + ((i * 17) % 46), y + 18 + ((i * 11) % 30), 2);
+    },
+    branch(ctx, d, x, y) {
+      ctx.fillStyle = '#5a3418';
+      ctx.fillRect(x, y + 16, 80, 5);
+      ctx.fillRect(x + 38, y + 16, 4, 10);
+      ctx.fillStyle = '#2f9a3a';
+      for (let i = 0; i < 5; i++) circle(ctx, x + 8 + i * 16, y + 14, 6);
+    },
+  });
+
+  const baseFruitKind = R.drawFruitKind;
+  R.drawFruitKind = function (ctx, f) {
+    if (baseFruitKind(ctx, f)) return true;
+    const cx = Math.round(f.cx),
+      cy = Math.round(f.cy);
+    if (f.kind === 'dark') {
+      ctx.fillStyle = '#100818';
+      circle(ctx, cx, cy, f.r);
+      ctx.fillStyle = '#3a2a5a';
+      ctx.fillRect(cx - 2, cy - 2, 2, 2);
+      ctx.fillStyle = '#ff3a5a';
+      ctx.fillRect(cx - 2, cy, 1, 1);
+      ctx.fillRect(cx + 1, cy, 1, 1);
+      return true;
+    }
+    if (f.kind === 'leaf') {
+      ctx.fillStyle = '#5ac44a';
+      ctx.fillRect(cx - 4, cy - 1, 8, 3);
+      ctx.fillRect(cx - 2, cy - 2, 4, 5);
+      ctx.fillStyle = '#2e7a2a';
+      ctx.fillRect(cx - 3, cy, 6, 1);
+      return true;
+    }
+    if (f.kind === 'spark') {
+      ctx.fillStyle = Math.floor(f.t / 3) % 2 ? '#ffd84a' : '#ff6a8a';
+      ctx.fillRect(cx - 2, cy - 2, 4, 4);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx - 1, cy - 1, 2, 2);
+      return true;
+    }
+    return false;
+  };
+
+  const baseBlock = R.drawBlock;
+  R.drawBlock = function (ctx, b, x, y) {
+    if (b.style === 'log') {
+      ctx.fillStyle = '#4a2c14';
+      ctx.fillRect(x, y, b.w, b.h);
+      ctx.fillStyle = '#8a5a2a';
+      ctx.fillRect(x, y + 1, b.w, b.h - 3);
+      ctx.fillStyle = '#a87a4a';
+      for (let i = 6; i < b.w; i += 22) ctx.fillRect(x + i, y + 2, 8, 1);
+      return;
+    }
+    return baseBlock(ctx, b, x, y);
+  };
+
+  R.drawGravNote = function (ctx, W) {
+    if (Math.floor(W.time / 8) % 2) return;
+    G.SPR.tiny(ctx, 'G×1.0', 8, 30, '#ff9af0', 2);
+  };
+  R.drawReverseNote = function (ctx, W) {
+    ctx.fillStyle = 'rgba(255,154,240,0.07)';
+    ctx.fillRect(0, 0, SW, SH);
+    G.SPR.tiny(ctx, '<>?', 8, 30, '#ff9af0', 2);
+  };
+  // 暗闇：プレイヤーの周りだけ見える
+  R.drawDarkness = function (ctx, W, a) {
+    const P = W.player;
+    const cx = P.cx,
+      cy = P.cy;
+    ctx.save();
+    ctx.fillStyle = `rgba(4,2,12,${a})`;
+    ctx.beginPath();
+    ctx.rect(0, 0, SW, SH);
+    ctx.arc(cx, cy, 38, 0, Math.PI * 2, true);
+    ctx.fill();
+    ctx.fillStyle = `rgba(4,2,12,${a * 0.5})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 38, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 26, 0, Math.PI * 2, true);
+    ctx.fill();
+    ctx.restore();
+  };
+
+  R.drawBlackHole = function (ctx, h) {
+    const cx = Math.round(h.cx + (h.shakeX || 0)),
+      cy = Math.round(h.cy);
+    const r = h.r * h.size;
+    if (h.white) {
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      circle(ctx, cx, cy, 30 + Math.sin(h.W.time * 0.3) * 4);
+      ctx.fillStyle = '#ffffff';
+      circle(ctx, cx, cy, 16);
+      return;
+    }
+    // 降着円盤
+    for (let k = 0; k < 3; k++) {
+      ctx.strokeStyle = ['rgba(192,112,255,0.55)', 'rgba(255,154,240,0.45)', 'rgba(255,216,120,0.35)'][k];
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, r * (1.9 + k * 0.45), r * (0.55 + k * 0.12), h.spin * (k % 2 ? -0.5 : 0.3), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 10; i++) {
+      const a = h.spin * 2 + (i / 10) * Math.PI * 2;
+      const d = r * (1.3 + ((i * 7) % 5) * 0.15);
+      ctx.fillStyle = i % 2 ? '#f0c0ff' : '#ffd878';
+      ctx.fillRect(Math.round(cx + Math.cos(a) * d), Math.round(cy + Math.sin(a) * d * 0.5), 2, 2);
+    }
+    ctx.fillStyle = h.hurtT > 0 ? '#ffffff' : '#000000';
+    circle(ctx, cx, cy, r);
+    ctx.strokeStyle = '#c070ff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 1, 0, Math.PI * 2);
+    ctx.stroke();
+    if (h.size > 0.6) {
+      ctx.fillStyle = '#ff3a5a';
+      ctx.fillRect(cx - 7, cy - 3, 3, 2);
+      ctx.fillRect(cx + 4, cy - 3, 3, 2);
+      ctx.fillStyle = '#c070ff';
+      ctx.fillRect(cx - 5, cy + 5, 10, 1);
+    }
+  };
+
+  R.drawBigTree = function (ctx, tr) {
+    const bx = Math.round(tr.cx),
+      by = Math.round(tr.y + tr.h);
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.rotate(tr.rot);
+    ctx.fillStyle = tr.hurtT > 0 ? '#ffffff' : '#5a3418';
+    ctx.fillRect(-6, -180, 12, 180);
+    ctx.fillStyle = '#7a4a24';
+    ctx.fillRect(-4, -180, 3, 180);
+    const blobs = [[0, -186, 22], [-16, -172, 14], [16, -172, 14], [0, -206, 14]];
+    ctx.fillStyle = '#1f6a2a';
+    for (const b of blobs) circle(ctx, b[0], b[1] + 1, b[2]);
+    ctx.fillStyle = '#2f9a3a';
+    for (const b of blobs) circle(ctx, b[0], b[1], b[2] - 1);
+    ctx.fillStyle = '#c8102e';
+    for (let i = 0; i < 5; i++) circle(ctx, -14 + ((i * 13) % 30), -196 + ((i * 9) % 26), 2);
+    ctx.restore();
+  };
+
+  R.drawTreeBoss = function (ctx, t) {
+    const cx = Math.round(t.cx + (t.shakeX || 0));
+    const base = Math.round(t.y + t.h);
+    const sway = Math.sin(t.sway) * 3;
+    ctx.save();
+    if (t.rot) {
+      ctx.translate(cx, base);
+      ctx.rotate(t.rot);
+      ctx.translate(-cx, -base);
+    }
+    // 根
+    ctx.fillStyle = '#4a2c14';
+    ctx.fillRect(cx - 34, base - 8, 68, 8);
+    ctx.fillRect(cx - 44, base - 4, 14, 4);
+    ctx.fillRect(cx + 30, base - 4, 14, 4);
+    // 幹
+    const top = t.y + 70;
+    ctx.fillStyle = t.hurtT > 0 ? '#ffffff' : '#6a4020';
+    ctx.fillRect(cx - 20, top, 40, base - top);
+    ctx.fillStyle = '#8a5a2a';
+    ctx.fillRect(cx - 14, top, 6, base - top);
+    ctx.fillStyle = '#4a2c14';
+    for (let y = top + 10; y < base; y += 18) ctx.fillRect(cx - 18 + ((y * 7) % 20), y, 8, 2);
+    // 葉
+    const blobs = [[0, 30, 46], [-40, 50, 30], [40, 50, 30], [-20, 10, 28], [22, 8, 28], [0, -4, 22]];
+    ctx.fillStyle = '#16521f';
+    for (const b of blobs) circle(ctx, cx + b[0] + sway, t.y + b[1] + 2, b[2]);
+    ctx.fillStyle = '#2f8a34';
+    for (const b of blobs) circle(ctx, cx + b[0] + sway, t.y + b[1], b[2] - 2);
+    ctx.fillStyle = '#5ac44a';
+    for (const b of blobs) circle(ctx, cx + b[0] - 6 + sway, t.y + b[1] - 6, Math.max(3, b[2] - 18));
+    ctx.fillStyle = '#c8102e';
+    for (let i = 0; i < 12; i++) circle(ctx, cx - 60 + ((i * 37) % 120) + sway, t.y + 6 + ((i * 23) % 64), 3);
+    // 顔（幹）
+    const fy = top + 40;
+    const ink = '#2a1608';
+    ctx.fillStyle = ink;
+    if (t.face === 'hurt') {
+      ctx.fillRect(cx - 12, fy, 8, 2);
+      ctx.fillRect(cx + 4, fy, 8, 2);
+      ctx.fillRect(cx - 6, fy + 16, 12, 6);
+    } else {
+      ctx.fillRect(cx - 13, fy - 2, 9, 7);
+      ctx.fillRect(cx + 4, fy - 2, 9, 7);
+      ctx.fillStyle = t.face === 'rage' || t.face === 'angry' ? '#ff3a3a' : '#ffe9a8';
+      ctx.fillRect(cx - 10, fy, 3, 3);
+      ctx.fillRect(cx + 7, fy, 3, 3);
+      ctx.fillStyle = ink;
+      ctx.fillRect(cx - 15, fy - 6, 10, 2);
+      ctx.fillRect(cx + 5, fy - 6, 10, 2);
+      if (t.face === 'grin' || t.face === 'rage') {
+        ctx.fillRect(cx - 10, fy + 16, 20, 3);
+        ctx.fillStyle = '#ffe9a8';
+        for (let i = -8; i < 9; i += 4) ctx.fillRect(cx + i, fy + 16, 2, 2);
+      } else ctx.fillRect(cx - 6, fy + 18, 12, 2);
+      // ひげ（ニュートン風）
+      ctx.fillStyle = '#e8e2d0';
+      ctx.fillRect(cx - 16, fy + 8, 6, 14);
+      ctx.fillRect(cx + 10, fy + 8, 6, 14);
+    }
+    ctx.restore();
+  };
 })();

@@ -46,6 +46,17 @@ const NAIVE = [
   { id: '6-1', name: 'フェイントの炎', enter: { x: 300, y: 226 }, steps: [{ go: 500 }], expect: /フェイント/ },
   { id: '6-2', name: '出口のトゲ', enter: { x: 236, y: 66 }, steps: [{ jump: 0, hold: 16, dj: 18, djHold: 14 }, { wait: 30 }], goal: 'up', expect: /出口にも/ },
   { id: '6-3', name: '落ちる天井', from: 'S', steps: [{ go: 500 }], expect: /天井/ },
+  // 3面
+  { id: '7-1', name: '重力が戻る', from: 'S', steps: [{ go: 92 }, { jump: 'R', hold: 12 }, { go: 500 }], expect: /重力が急に/ },
+  { id: '7-1', name: 'スペースデブリ', enter: { x: 384, y: 226 }, steps: [{ go: 500 }], expect: /デブリ/ },
+  { id: '7-2', name: '早すぎる左右反転', from: 'S', steps: [{ go: 92 }, { jump: 'R', hold: 12 }, { go: 500 }], expect: /左右反転/ },
+  { id: '7-2', name: '天井のトゲ', enter: { x: 262, y: 226 }, steps: [{ go: 330 }, { wait: 30 }], expect: /天井まで/ },
+  { id: '7-3', name: '抜ける足場', from: 'S', steps: [{ go: 74 }, { jump: 'R', hold: 12 }, { go: 156 }, { jump: 'R', hold: 12 }, { wait: 60 }], expect: /抜ける|暗くて/ },
+  { id: '8-1', name: '木のリンゴ', from: 'S', steps: [{ go: 500 }], expect: /ニュートンも/ },
+  { id: '8-1', name: '横に落ちるリンゴ', enter: { x: 128, y: 226 }, steps: [{ go: 500 }], expect: /横にも/ },
+  { id: '8-1', name: '跳べない穴', enter: { x: 156, y: 226 }, steps: [{ go: 196 }, { jump: 'R', hold: 16, dj: 20, djHold: 14 }, { go: 500 }], expect: /跳べる距離/ },
+  { id: '8-3', name: '偽セーブ', enter: { x: 30, y: 226 }, steps: [{ go: 500 }], expect: /ハズレ/ },
+  { id: '8-3', name: '手紙', enter: { x: 30, y: 226 }, steps: [{ go: 90 }, { wait: 150 }], expect: /花火/ },
 ];
 
 // human.js の手順を途中まで使う（cut: 指定した wait を消してすぐ進む）

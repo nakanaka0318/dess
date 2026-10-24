@@ -1,4 +1,4 @@
-// 2面・3面のボス：サボテン将軍（2面中ボス） / THE SUN（2面ボス）
+// 2面・3面のボス：サボテン将軍（2面中ボス） / THE SUN（2面ボス） / ブラックホール（3面中ボス） / ニュートンの樹（ラスボス）
 (function () {
   'use strict';
   const G = globalThis.G;
@@ -573,4 +573,505 @@
     if (W.game && W.game.stageClear) W.game.stageClear();
   }
   G.BOSSES.sunAftermath = aftermath;
+  // ------------------------------------------------------------------
+  // ブラックホール（3面中ボス）：プレイヤーも弾も吸い寄せる
+  // ------------------------------------------------------------------
+  class BlackHole extends G.Boss {
+    constructor(W, cx, cy) {
+      super(W, cx - 22, cy - 22, 44, 44, { hp: 90, name: 'ブラックホール' });
+      this.r = 22;
+      this.size = 0.15;
+      this.spin = 0;
+      this.cause = '吸い込まれた。スパゲッティになった。';
+    }
+    hits(rect) {
+      return this.hazard && G.rectCircle(rect, this.cx, this.cy, this.r * this.size - 4);
+    }
+    shotBox() {
+      const r = this.r * this.size + 6;
+      return { x: this.cx - r, y: this.cy - r, w: r * 2, h: r * 2 };
+    }
+    tick() {
+      super.tick();
+      this.spin += 0.05;
+      // 弾も吸い寄せられて曲がる
+      if (this.vulnerable)
+        for (const b of this.W.bullets) {
+          if (b.hostile) continue;
+          const dx = this.cx - b.x,
+            dy = this.cy - b.y;
+          const d = Math.hypot(dx, dy) || 1;
+          b.vx += (dx / d) * 0.4;
+          b.vy += (dy / d) * 0.4;
+          const v = Math.hypot(b.vx, b.vy) || 1;
+          b.vx *= 6 / v;
+          b.vy *= 6 / v;
+          b.life = Math.max(b.life, 8);
+        }
+    }
+    draw(ctx) {
+      G.Render.drawBlackHole(ctx, this);
+    }
+  }
+  G.BlackHole = BlackHole;
+
+  G.BOSSES.blackhole = function (W, opts) {
+    const P = W.player;
+    const rng = W.rng;
+    const h = W.add(new BlackHole(W, 240, 120));
+    let pullBase = 0;
+    const phase2 = () => h.hp < h.maxHp / 2;
+    W.windAir = false;
+    W.onStep = () => {
+      // 中心からの距離が近いほど強く吸い寄せる
+      if (!pullBase || !P.alive) {
+        W.windX = 0;
+        return;
+      }
+      const dx = h.cx - P.cx;
+      const d = Math.max(30, Math.hypot(dx, h.cy - P.cy));
+      W.windX = Math.sign(dx) * pullBase * G.clamp(140 / d, 0.5, 1.6);
+    };
+    const debris = (x, y, vx, vy, kind, cause) => {
+      const f = W.fruit(x, y, { kind: kind || 'rock', r: 5, cause: cause || '宇宙のゴミが当たった。' });
+      f.vel(vx, vy);
+      f.bossShot = true;
+      return f;
+    };
+    // 渦を巻いて飛び出すゴミ
+    function* spiral() {
+      G.sfx('charge');
+      yield 20;
+      let a = rng.range(0, 6.28);
+      const arms = phase2() ? 3 : 2;
+      for (let t = 0; t < 140; t++) {
+        if (t % 7 === 0) {
+          for (let k = 0; k < arms; k++) {
+            const ang = a + (k / arms) * Math.PI * 2;
+            debris(h.cx + Math.cos(ang) * 16, h.cy + Math.sin(ang) * 16, Math.cos(ang) * 1.6, Math.sin(ang) * 1.6);
+          }
+        }
+        a += 0.06;
+        yield 1;
+      }
+      yield 30;
+    }
+    // 強く吸い込む。画面の端から星が中心へ飛んでくる
+    function* inhale() {
+      W.say('スゥゥゥ……', 0, 0, 50, { follow: h, dy: -12 });
+      G.sfx('rumble');
+      pullBase = phase2() ? 1.0 : 0.9;
+      for (let t = 0; t < 130; t++) {
+        if (t % 16 === 0) {
+          const side = rng.chance(0.5) ? -1 : 1;
+          const y = rng.range(150, 236);
+          const x = side < 0 ? -8 : 488;
+          const dx = h.cx - x,
+            dy = h.cy - y;
+          const d = Math.hypot(dx, dy);
+          debris(x, y, (dx / d) * 2.2, (dy / d) * 2.2, 'star', '吸い込まれる星にぶつかった。');
+        }
+        yield 1;
+      }
+      pullBase = 0.55;
+      yield 30;
+    }
+    // 吐き出し：星の輪（輪ごとに隙間がずれる）
+    function* exhale() {
+      for (let w = 0; w < (phase2() ? 3 : 2); w++) {
+        h.size = 1.25;
+        G.sfx('charge');
+        yield 20;
+        h.size = 1;
+        const n = 12,
+          off = (w % 2) * (Math.PI / n);
+        for (let i = 0; i < n; i++) {
+          const a = off + (i / n) * Math.PI * 2;
+          debris(h.cx, h.cy, Math.cos(a) * 1.8, Math.sin(a) * 1.8, 'star', '吐き出された星に当たった。');
+        }
+        G.sfx('explode');
+        yield 40;
+      }
+    }
+    // 後半：ゆっくり横に動く
+    function* drift() {
+      const tx = G.clamp(P.cx < 240 ? rng.range(260, 340) : rng.range(140, 220), 140, 340);
+      h.tweenTo(tx - h.r, h.y, 80, 'inOutQuad');
+      yield 80;
+    }
+
+    W.run(function* () {
+      const quick = opts.respawn && W.game && W.game.flags.holeSeen;
+      yield () => P.alive && P.onGround && P.cx > 70;
+      W.closeGate && W.closeGate();
+      G.music(null);
+      G.sfx('rumble');
+      for (let i = 0; i <= 50; i++) {
+        h.size = 0.15 + (i / 50) * 0.85;
+        yield 1;
+      }
+      if (!quick) {
+        W.say('……ゴゴゴ……', 0, 0, 60, { follow: h, dy: -14 });
+        yield 60;
+        W.say('すべてを吸いこむ。\n月も、太陽も、おまえも。', 0, 0, 100, { follow: h, dy: -14 });
+        yield 90;
+      }
+      if (W.game) W.game.flags.holeSeen = true;
+      G.music('boss');
+      h.showBar = true;
+      h.hazard = true;
+      h.vulnerable = true;
+      W.autoFire = true;
+      pullBase = 0.55;
+      if (W.easy) W.lives = 3;
+      let last = '';
+      for (;;) {
+        const pool = phase2() ? ['spiral', 'inhale', 'exhale', 'drift'] : ['spiral', 'inhale', 'exhale'];
+        let p;
+        do p = rng.pick(pool);
+        while (p === last);
+        last = p;
+        if (p === 'spiral') yield* spiral();
+        else if (p === 'inhale') yield* inhale();
+        else if (p === 'exhale') yield* exhale();
+        else yield* drift();
+        yield phase2() ? 16 : 26;
+      }
+    }, h.ai);
+
+    h.onDefeat = () => {
+      G.music(null);
+      W.autoFire = false;
+      W.lives = null;
+      W.invuln = 0;
+      pullBase = 0;
+      W.windX = 0;
+      clearShots(W, h);
+      markDead(W, 'holeDead', 2, 11);
+      W.run(function* () {
+        for (let i = 0; i < 50; i++) {
+          h.size = Math.max(0.1, 1 - i / 50);
+          h.shakeX = i % 2 ? 2 : -2;
+          yield 1;
+        }
+        h.showBar = false;
+        W.say('……ゲプッ', h.cx, h.cy - 14, 50, {});
+        yield 50;
+        // ホワイトホール：今まで吸いこんだ物を全部吐き出す
+        W.flash = 16;
+        W.flashColor = '#ffffff';
+        W.shake = 30;
+        G.sfx('bigexplode');
+        W.text(240, 60, 'ホワイトホール！', { size: 16, color: '#ffffff' });
+        h.white = true;
+        const items = [
+          ['moon', 16, '吐き出された月に当たった。'], ['sun', 14, '吐き出された太陽に当たった。'], ['cherry', 10, 'デリシャス・キングのかけらに当たった。'],
+          ['cherry', 6, '吐き出されたリンゴに当たった。'], ['cherry', 6, '吐き出されたリンゴに当たった。'], ['rock', 8, '吐き出された岩に当たった。'],
+          ['needle', 4, '吐き出されたサボテンの針。'], ['cherry', 6, '吐き出されたリンゴに当たった。'],
+        ];
+        for (let i = 0; i < items.length; i++) {
+          const [k, r, cause] = items[i];
+          const a = -Math.PI / 2 + (i - (items.length - 1) / 2) * 0.36;
+          let e;
+          if (k === 'moon' || k === 'sun') {
+            e = W.add(new G.Moon(W, h.cx, h.cy, { r, cause, face: k === 'moon' ? 'grin' : 'shock' }));
+            e.sunny = k === 'sun';
+            e.offscreenKill = 80;
+          } else e = W.fruit(h.cx, h.cy, { kind: k, r, cause });
+          if (k === 'moon') {
+            // 月だけはこちらを狙って落ちてくる
+            const T = 50;
+            e.cause = 'ホワイトホールから月が出てきた。まだ生きていた。';
+            e.vel((P.cx - h.cx) / T, (240 - r - h.cy - 0.5 * 0.12 * T * T) / T, 0, 0.12);
+          } else e.vel(Math.cos(a) * 2.6, Math.sin(a) * 2.6 - 1, 0, 0.12);
+          yield 6;
+        }
+        yield 150;
+        h.alive = false;
+        h.visible = false;
+        G.sfx('fanfare');
+        W.text(240, 90, 'ブラックホール をたおした！', { size: 15, color: '#ffe9a8' });
+        yield 60;
+        if (W.onBossCleared) W.onBossCleared();
+      });
+    };
+    return h;
+  };
+
+  // ------------------------------------------------------------------
+  // ニュートンの樹（ラスボス）：重力を操る
+  // ------------------------------------------------------------------
+  class TreeBoss extends G.Boss {
+    constructor(W, cx) {
+      super(W, cx - 55, 30, 110, 210, { hp: 220, name: 'ニュートンの樹' });
+      this.face = 'calm';
+      this.sway = 0;
+      this.rot = 0;
+      this.cause = 'ニュートンの樹にぶつかった。';
+      this.layer = 1;
+    }
+    trunk() {
+      return { x: this.cx - 18, y: this.y + 80, w: 36, h: this.h - 80 };
+    }
+    hits(rect) {
+      return this.hazard && G.overlap(rect, this.trunk());
+    }
+    shotBox() {
+      const t = this.trunk();
+      return { x: t.x - 8, y: t.y - 10, w: t.w + 16, h: t.h + 10 };
+    }
+    tick() {
+      super.tick();
+      this.sway += 0.03;
+    }
+    draw(ctx) {
+      G.Render.drawTreeBoss(ctx, this);
+    }
+  }
+  G.TreeBoss = TreeBoss;
+
+  G.BOSSES.tree = function (W, opts) {
+    const P = W.player;
+    const rng = W.rng;
+    const t = W.add(new TreeBoss(W, 418));
+    const phase = () => (t.hp > t.maxHp * 0.66 ? 1 : t.hp > t.maxHp * 0.33 ? 2 : 3);
+    const deaths = (W.game && W.game.deaths) || 0;
+    const apple = (x, y, r, cause) => {
+      const f = W.fruit(x, y, { r: r || 6, cause: cause || 'ニュートンのリンゴが落ちてきた。' });
+      f.bossShot = true;
+      return f;
+    };
+    // リンゴの雨（重力の向きに落ちる）
+    function* rain() {
+      t.face = 'grin';
+      const n = [7, 9, 11][phase() - 1];
+      const xs = [];
+      for (let i = 0; i < n; i++) xs.push(rng.range(24, 380));
+      const g = W.gravity;
+      const marks = xs.map((x) => W.text(x, g > 0 ? 30 : 250, g > 0 ? '▼' : '▲', { size: 9, color: '#ff6a8a' }));
+      G.sfx('warn');
+      yield 36;
+      marks.forEach((m) => (m.alive = false));
+      for (let i = 0; i < n; i++) {
+        const a = apple(xs[i], g > 0 ? -8 : 288);
+        a.vel(0, g * 1.5, 0, g * 0.12);
+        a.maxV = 5;
+        if (i % 2) yield 6;
+      }
+      yield 40;
+    }
+    // 根っこの波（床か天井を走る）
+    function* roots() {
+      t.face = 'angry';
+      W.shake = 14;
+      G.sfx('rumble');
+      yield 26;
+      const g = W.gravity;
+      for (let tx = 18; tx >= 1; tx--) {
+        const s = W.spike(tx, g > 0 ? 11 : 1, g > 0 ? 'u' : 'd', { hidden: true, cause: '根っこにつまずいた。', pal: 'dark' });
+        s.bossShot = true;
+        s.pop(3, false);
+        W.after(22, () => (s.alive = false));
+        if (tx % 2 === 0) G.sfx('pop');
+        yield phase() === 3 ? 4 : 5;
+      }
+      t.face = 'calm';
+      yield 30;
+    }
+    // 葉っぱの嵐：左向きの風と葉っぱ
+    function* leaves() {
+      t.face = 'grin';
+      W.say('葉っぱカッター！', 0, 0, 50, { follow: t, dy: -6 });
+      W.windX = -0.7;
+      for (let k = 0; k < 150; k++) {
+        if (k % 12 === 0) {
+          const y = rng.range(30, 236);
+          const lf = W.fruit(480, y, { kind: 'leaf', r: 4, cause: '葉っぱで切れた。' });
+          lf.base = y;
+          lf.vel(-2.6, 0);
+          lf.bossShot = true;
+          lf.tick = function () {
+            this.y = this.base + Math.sin(this.t * 0.12) * 10 - this.r;
+          };
+        }
+        yield 1;
+      }
+      W.windX = 0;
+      yield 30;
+    }
+    // 引力反転：しばらく上下がさかさまになる
+    function* flip() {
+      W.say('引力、反転！', 0, 0, 60, { follow: t, dy: -6 });
+      G.sfx('charge');
+      W.flash = 6;
+      W.flashColor = '#c58cff';
+      yield 40;
+      W.gravity = -1;
+      P.vy *= 0.3;
+      P.djump = true;
+      G.sfx('flip');
+      yield 40;
+      yield* rain();
+      yield* roots();
+      W.say('……戻れ！', 0, 0, 40, { follow: t, dy: -6 });
+      G.sfx('charge');
+      yield 30;
+      W.gravity = 1;
+      P.vy *= 0.3;
+      P.djump = true;
+      G.sfx('flip');
+      yield 40;
+    }
+    // 大きなリンゴが転がってくる（後半）
+    function* bigApple() {
+      t.face = 'rage';
+      G.sfx('warn');
+      yield 24;
+      const a = apple(t.cx - 40, 240 - 20, 20, '大きなリンゴに轢かれた。');
+      a.vel(-3, 0);
+      a.offscreenKill = 60;
+      G.sfx('rumble');
+      yield 90;
+      t.face = 'calm';
+    }
+    // 最後のあがき：根ごと跳んでくる
+    function* desperation() {
+      t.vulnerable = false;
+      t.face = 'rage';
+      W.say('リンゴは……落ちるものだ！', 0, 0, 80, { follow: t, dy: -6 });
+      W.shake = 30;
+      G.sfx('roar');
+      yield 60;
+      t.vulnerable = true;
+      for (let k = 0; k < 2; k++) {
+        const tx = k === 0 ? 220 : 418;
+        const dur = 56;
+        t.vel((tx - t.cx) / dur, -5.6, 0, 0.2);
+        G.sfx('boing');
+        yield () => t.vy > 0 && t.y + t.h >= 240;
+        t.stop();
+        t.y = 240 - t.h;
+        W.shake = 20;
+        G.sfx('stomp');
+        for (const d of [-1, 1]) {
+          const wv = W.hbox(t.cx + d * 30 - 6, 230, 12, 10, { kind: 'wave', cause: '樹の着地に足をすくわれた。' });
+          wv.vel(d * 2.6, 0);
+        }
+        yield 60;
+      }
+      t.face = 'calm';
+    }
+
+    W.run(function* () {
+      const quick = opts.respawn && W.game && W.game.flags.treeSeen;
+      yield () => P.alive && P.onGround && P.y + P.h <= 240;
+      W.sealFloor && W.sealFloor();
+      G.music(null);
+      if (!quick) {
+        W.say('よくぞ来た。わしがニュートンの樹じゃ。', 0, 0, 100, { follow: t, dy: -6 });
+        yield 100;
+        W.say(`ここまでに ${deaths} 回、リンゴやトゲに倒れたな。`, 0, 0, 100, { follow: t, dy: -6 });
+        yield 100;
+        t.face = 'grin';
+        W.say('すべてのリンゴは、わしから落ちる。\n最後のリンゴを受けてみよ！', 0, 0, 110, { follow: t, dy: -6 });
+        yield 100;
+      } else {
+        t.face = 'grin';
+        W.say(`また落ちてきたか。${deaths} 回目じゃ。`, 0, 0, 60, { follow: t, dy: -6 });
+        yield 50;
+      }
+      if (W.game) W.game.flags.treeSeen = true;
+      G.sfx('roar');
+      W.shake = 30;
+      G.music('last');
+      t.showBar = true;
+      t.hazard = true;
+      t.vulnerable = true;
+      W.autoFire = true;
+      if (W.easy) W.lives = 3;
+      let lastPhase = 1,
+        desp = false,
+        last = '';
+      for (;;) {
+        const ph = phase();
+        if (ph !== lastPhase) {
+          lastPhase = ph;
+          G.sfx('roar');
+          W.shake = 24;
+          W.flash = 8;
+          W.flashColor = '#c0ff90';
+          W.say(ph === 2 ? 'ほう、やるのう。' : '万有引力の本気を見せてやろう！', 0, 0, 70, { follow: t, dy: -6 });
+          yield 60;
+        }
+        if (!desp && t.hp < t.maxHp * 0.1) {
+          desp = true;
+          yield* desperation();
+          continue;
+        }
+        const pool = ph === 1 ? ['rain', 'roots', 'leaves'] : ph === 2 ? ['rain', 'roots', 'leaves', 'flip'] : ['rain', 'roots', 'flip', 'big', 'leaves'];
+        let p;
+        do p = rng.pick(pool);
+        while (p === last);
+        last = p;
+        if (p === 'rain') yield* rain();
+        else if (p === 'roots') yield* roots();
+        else if (p === 'leaves') yield* leaves();
+        else if (p === 'flip') yield* flip();
+        else yield* bigApple();
+        yield ph === 1 ? 24 : 14;
+      }
+    }, t.ai);
+
+    t.onDefeat = () => {
+      G.music(null);
+      W.autoFire = false;
+      W.god = true;
+      W.lives = null;
+      W.invuln = 0;
+      W.windX = 0;
+      W.gravity = 1;
+      clearShots(W, t);
+      W.run(function* () {
+        t.face = 'hurt';
+        for (let i = 0; i < 80; i++) {
+          t.shakeX = i % 2 ? 2 : -2;
+          if (i % 8 === 0) {
+            W.burst(t.cx + rng.range(-40, 40), t.y + rng.range(10, 100), 16, ['#3a8a3a', '#7ad05a', '#ff3355'], 2.5, { g: 0.08 });
+            G.sfx('explode');
+          }
+          yield 1;
+        }
+        t.shakeX = 0;
+        t.showBar = false;
+        W.say('見事じゃ……', 0, 0, 60, { follow: t, dy: -6 });
+        yield 50;
+        // 樹が倒れる
+        for (let i = 1; i <= 40; i++) {
+          t.rot = (i / 40) * (Math.PI / 2) * (i / 40);
+          yield 1;
+        }
+        W.shake = 30;
+        G.sfx('bigexplode');
+        W.burst(t.cx + 60, 236, 80, ['#3a8a3a', '#7ad05a', '#8a5a2a', '#ff3355'], 4, { up: 2, g: 0.12, life: 60 });
+        yield 60;
+        // 最後のリンゴが頭に落ちてきて……
+        const last = W.fruit(P.cx, -10, { r: 6, kind: 'gold', keep: true });
+        last.hazard = false;
+        last.vel(0, 2, 0, 0.15);
+        yield () => last.cy >= P.y - 4;
+        last.vel(P.face > 0 ? -1.4 : 1.4, -3, 0, 0.2);
+        G.sfx('bonk');
+        W.say('コツン', P.cx, P.y - 6, 50, { plain: true, size: 10, color: '#ffffff' });
+        yield 50;
+        W.say('ひらめいた！', P.cx, P.y - 10, 90, {});
+        G.sfx('fanfare');
+        W.text(240, 80, 'ニュートンの樹 をたおした！', { size: 15, color: '#ffe9a8' });
+        W.text(240, 104, 'リンゴは、下に落ちるものだった。', { size: 11, color: '#e8e2ff' });
+        if (W.game) W.game.flags.treeDead = true;
+        yield 220;
+        if (W.game && W.game.stageClear) W.game.stageClear();
+      });
+    };
+    return t;
+  };
 })();
