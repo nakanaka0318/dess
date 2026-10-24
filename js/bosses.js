@@ -266,6 +266,7 @@
         G.sfx('bigexplode');
         k.alive = false;
         k.visible = false;
+        k.showBar = false;
         yield 50;
         G.sfx('fanfare');
         W.text(240, 90, 'デリシャス・キング をたおした！', { size: 15, color: '#ffe9a8' });
@@ -366,6 +367,7 @@
       for (let i = 0; i < n; i++) {
         const st = W.fruit(xs[i], -8, { kind: 'star', r: 6, cause: '星くずに打たれた。' });
         st.vel(0, 3.1);
+        st.trail = true;
         if (i % 2) yield 5;
       }
       m.face = 'grin';
@@ -564,6 +566,9 @@
       }
       W.run(function* () {
         m.face = 'hurt';
+        // 画面外で倒されても見えるように中央へ
+        m.tweenTo(240 - m.r, 110 - m.r, 30, 'outQuad');
+        yield 30;
         for (let i = 0; i < 100; i++) {
           m.shakeX = i % 2 ? 3 : -3;
           if (i % 8 === 0) {
@@ -579,6 +584,7 @@
         W.burst(m.cx, m.cy, 220, ['#fffbe0', '#efe6b0', '#c9bd80', '#ffffff', '#ffd84a'], 6, { g: 0.08, life: 90 });
         m.alive = false;
         m.visible = false;
+        m.showBar = false;
         yield 100;
         // 最後のかけら……
         const piece = W.fruit(P.cx, -12, { r: 6, cause: '' });

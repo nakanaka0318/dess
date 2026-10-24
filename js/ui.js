@@ -448,16 +448,35 @@
     }
   };
 
+  // ---------------- プロローグ ----------------
+  const INTRO = ['ある夜、月が笑った。', 'そして――落ちてきた。', '何度死んでもかまわない。', '月を、倒せ。'];
+  function drawIntro(ctx, game) {
+    const t = game.introT;
+    const out = Math.max(0, Math.min(1, (330 - t) / 30));
+    ctx.fillStyle = `rgba(4,2,12,${0.94 * out})`;
+    ctx.fillRect(0, 0, SW, SH);
+    INTRO.forEach((line, i) => {
+      const a = Math.max(0, Math.min(1, (t - 20 - i * 55) / 25)) * out;
+      if (a <= 0) return;
+      ctx.globalAlpha = a;
+      textOut(ctx, line, SW / 2, 90 + i * 28, i === 3 ? 16 : 12, i === 3 ? '#ffcf4a' : '#e8e2ff', 'center');
+    });
+    ctx.globalAlpha = (0.4 + Math.sin(t * 0.1) * 0.2) * out;
+    textOut(ctx, G.isTouch ? 'タップでスキップ' : 'ジャンプでスキップ', SW / 2, 250, 9, '#a89cc8', 'center');
+    ctx.globalAlpha = 1;
+  }
+
   // ---------------- まとめ ----------------
   UI.draw = function (ctx, game) {
     if (game.state === 'title') return UI.drawTitle(ctx, game);
     const W = game.world;
-    if (W) {
+    if (W && game.state !== 'ending') {
       drawWorldUI(ctx, W);
       drawBossBar(ctx, W);
     }
     if (game.state !== 'ending' && !(G.padLayout && G.padLayout.portrait)) drawHUD(ctx, game);
     drawAreaBanner(ctx, game);
+    if (game.state === 'intro') drawIntro(ctx, game);
     if (game.state === 'dead') drawDeath(ctx, game);
     if (game.state === 'pause') drawPause(ctx, game);
     if (game.state === 'ending') drawEnding(ctx, game);

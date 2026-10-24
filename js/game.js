@@ -54,9 +54,15 @@
       this.saveData = { room: start, tx: m.tx, ty: m.ty, initial: true };
       this.writePersist();
       this.enterRoom(start, { spawn: this.spawnFromSave() }, true);
-      this.state = 'play';
       this.lastArea = null;
-      this.showArea();
+      if (this.headless) {
+        this.state = 'play';
+        this.showArea();
+      } else {
+        // 短いプロローグ
+        this.state = 'intro';
+        this.introT = 0;
+      }
     }
     continueGame() {
       const p = this.persist;
@@ -171,6 +177,13 @@
         if (this.areaBanner.t > 200) this.areaBanner = null;
       }
       switch (this.state) {
+        case 'intro':
+          this.introT++;
+          if ((this.introT > 20 && (inp.jumpP || inp.okP || inp.shootP || inp.retryP)) || this.introT > 330) {
+            this.state = 'play';
+            this.showArea();
+          }
+          break;
         case 'play':
           if (inp.pauseP) {
             this.state = 'pause';

@@ -15,7 +15,10 @@ const out = process.argv[2] || '.';
   await page.keyboard.press('Enter');
   await page.waitForTimeout(200);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: out + '/e2e-intro.png' });
+  await page.keyboard.press('KeyZ'); // プロローグを飛ばす
+  await page.waitForTimeout(300);
   console.log('after start', await st());
   // 右へ走って最初のリンゴに当たる
   await page.keyboard.down('ArrowRight');

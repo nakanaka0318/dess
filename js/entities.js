@@ -170,6 +170,14 @@
       }
     }
     draw(ctx) {
+      if (this.trail) {
+        // 進行方向が読めるように尾を引く
+        for (let i = 1; i <= 5; i++) {
+          ctx.fillStyle = `rgba(255,240,150,${0.5 - i * 0.08})`;
+          const s = i < 3 ? 2 : 1;
+          ctx.fillRect(Math.round(this.cx - this.vx * i * 3), Math.round(this.cy - this.vy * i * 3), s, s);
+        }
+      }
       if (this.kind === 'star' || this.kind === 'rock') {
         const img = this.kind === 'star' ? G.SPR.star(this.r) : G.SPR.rockBall(this.r);
         ctx.drawImage(img, Math.round(this.cx - img.width / 2), Math.round(this.cy - img.height / 2));

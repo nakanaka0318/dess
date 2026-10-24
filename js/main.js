@@ -336,6 +336,10 @@
       if (game.endT > 240 && (inp.jumpP || inp.okP || inp.shootP || taps.length)) G.toTitle();
     } else {
       if (game.state === 'dead' && taps.length && game.deadT > 10) game.retry();
+      if (game.state === 'intro' && taps.length && game.introT > 20) {
+        game.state = 'play';
+        game.showArea();
+      }
       game.update(inp);
     }
     updatePadVisibility();

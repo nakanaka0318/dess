@@ -11,11 +11,17 @@ const G = load();
 //  { jump: 'R'|'L'|0, hold, dj, djHold, steer }  ジャンプ（dj フレーム後に2段目）。着地まで steer 方向に入力
 //  { until: fn, dir }              条件を満たすまで dir 方向に入力
 //  { shoot: n }                    n フレーム撃つ
-// 流れ星が近くに降ってこない瞬間まで待つ
-const STAR_SAFE = {
-  until: (W, P) => !W.ents.some((e) => e.alive && e.kind === 'star' && e.cy < P.cy + 10 && Math.abs(e.cx - (P.cx + 40)) < 70 && e.cy > P.cy - 150),
-  dir: 0,
-};
+// 跳んだ時の放物線と流れ星の予測軌道が重ならない瞬間まで待つ
+function jumpClear(W, P, dir) {
+  const stars = W.ents.filter((e) => e.alive && e.kind === 'star');
+  for (let t = 0; t <= 60; t += 2) {
+    const x = P.x + dir * G.PHYS.RUN * t;
+    const y = P.y - Math.max(0, 4.6 * t - 0.09 * t * t);
+    for (const s of stars) if (G.rectCircle({ x, y, w: P.w, h: P.h }, s.cx + s.vx * t, s.cy + s.vy * t, s.r + 4)) return false;
+  }
+  return true;
+}
+const STAR_SAFE = { until: (W, P) => jumpClear(W, P, 1), dir: 0 };
 const S = {
   '1-1': {
     from: '@',
