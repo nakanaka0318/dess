@@ -704,7 +704,8 @@
     ctx.fillStyle = o.cd > 0 ? '#6a4a90' : '#b070ff';
     circle(ctx, cx, cy, 6);
     ctx.fillStyle = '#ffffff';
-    const up = o.W.gravity === 1;
+    // 触れた後の重力の向きを矢印で示す
+    const up = o.dirOnly === 2 || (!o.dirOnly && o.W.gravity === 1);
     // 矢印（次に向く方向）
     ctx.fillRect(cx - 1, cy - 3, 2, 6);
     if (up) {
