@@ -6,13 +6,17 @@ const path = require('path');
 const os = require('os');
 
 // 本編の順路。各部屋について「前の部屋から入ってきた位置」と「セーブ地点」から、次の部屋への出口に到達できるか調べる
-const ROUTE = ['1-1', '1-2', '1-3', '1-4', '2-1', '2-2', '2-3', '2-4', '2-B', '3-1', '3-2', '3-3', '3-4', '4-1', '4-2', '4-3', '4-B'];
-const EXTRA = { '4-2': ['--shoot', 'action'] };
-const SKIP = { '2-B': true, '4-B': true, '3-4': true }; // ボス部屋は bosstest.js、3-4 は credits-test.js で検証
+const ROUTES = [
+  ['1-1', '1-2', '1-3', '1-4', '2-1', '2-2', '2-3', '2-4', '2-B', '3-1', '3-2', '3-3', '3-4', '4-1', '4-2', '4-3', '4-B'],
+  ['5-1', '5-2', '5-3', '5-B', '6-1', '6-2', '6-3', '6-B'],
+];
+const EXTRA = { '4-2': ['--shoot', 'action'], '5-1': ['--shoot', 'action'] };
+// ボス部屋は bosstest.js、3-4 は credits-test.js で検証
+const SKIP = { '2-B': true, '4-B': true, '3-4': true, '5-B': true, '6-B': true, '7-B': true, '8-B': true };
 
 function buildCases(G) {
   const cases = [];
-  ROUTE.forEach((id, i) => {
+  for (const ROUTE of ROUTES) ROUTE.forEach((id, i) => {
     if (SKIP[id]) return;
     const def = G.ROOMS[id];
     if (!def) return;

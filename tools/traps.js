@@ -33,6 +33,19 @@ const NAIVE = [
   { id: '2-4', name: '着地点のトゲ', enter: { x: 146, y: 226 }, steps: [{ jump: 'L', hold: 16 }, { go: -20 }], goal: 'left', expect: /気がゆるんだ/ },
   { id: '3-1', name: '前からのトゲ', base: '3-1', replaceJump: { jump: 'L', hold: 16 }, expect: /前に注意/ },
   { id: '3-4', name: 'THE END の文字', enter: { x: 206, y: 262, vy: -5 }, steps: [{ wait: 240 }], expect: /THE END/ },
+  // 2面
+  { id: '5-1', name: 'だるまサボテン', from: '@', steps: [{ go: 124 }, { jump: 'R', hold: 14 }, { go: 196 }, { jump: 'R', hold: 14 }, { go: 500 }], expect: /だるまさん/ },
+  { id: '5-1', name: '砂の柱', enter: { x: 310, y: 226 }, steps: [{ go: 352 }, { jump: 'R', hold: 12 }, { go: 500 }], expect: /砂の中/ },
+  { id: '5-1', name: '先回りの日差し', enter: { x: 410, y: 226 }, steps: [{ go: 500 }], expect: /先回り/ },
+  { id: '5-2', name: '砂嵐', from: 'S', steps: [{ wait: 100 }, { go: 74 }, { jump: 'R', hold: 16 }, { go: 500 }], expect: /砂嵐/ },
+  { id: '5-2', name: '蜃気楼の足場', enter: { x: 226, y: 226 }, steps: [{ wait: 160 }, { go: 236 }, { jump: 'R', hold: 14 }, { wait: 30 }, { go: 500 }], expect: /蜃気楼|トゲ|刺さ|痛い|鋭い|仲良く|触れて/ },
+  { id: '5-2', name: '下降気流', enter: { x: 340, y: 226 }, steps: [{ go: 372 }, { jump: 'R', hold: 14 }, { go: 500 }], expect: /下降気流/ },
+  { id: '5-3', name: '床の板', from: 'S', steps: [{ go: 500 }], expect: /罠を踏んだ/ },
+  { id: '5-3', name: 'お宝', enter: { x: 180, y: 226 }, steps: [{ go: 500 }], expect: /お宝/ },
+  { id: '5-3', name: '落とし穴', enter: { x: 300, y: 226 }, steps: [{ go: 500 }], expect: /落とし穴/ },
+  { id: '6-1', name: 'フェイントの炎', enter: { x: 300, y: 226 }, steps: [{ go: 500 }], expect: /フェイント/ },
+  { id: '6-2', name: '出口のトゲ', enter: { x: 236, y: 66 }, steps: [{ jump: 0, hold: 16, dj: 18, djHold: 14 }, { wait: 30 }], goal: 'up', expect: /出口にも/ },
+  { id: '6-3', name: '落ちる天井', from: 'S', steps: [{ go: 500 }], expect: /天井/ },
 ];
 
 // human.js の手順を途中まで使う（cut: 指定した wait を消してすぐ進む）

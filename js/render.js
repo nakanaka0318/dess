@@ -51,7 +51,7 @@
       const c = th.solid;
       ctx.fillStyle = c.base;
       ctx.fillRect(x, y, T, T);
-      if (theme === 'castle') {
+      if (theme === 'castle' || theme === 'temple') {
         // レンガ
         ctx.fillStyle = c.dk;
         const off = ty % 2 ? 10 : 0;
@@ -273,9 +273,16 @@
   }
 
   function drawBackground(ctx, W) {
-    const kind = W.def.bg || { grass: 'day', cave: 'cave', castle: 'castle', sky: 'night', moon: 'space' }[W.theme] || 'day';
-    ctx.drawImage(bgStatic(kind), 0, 0);
+    const kind = W.def.bg || { grass: 'day', cave: 'cave', castle: 'castle', sky: 'night', moon: 'space' }[W.theme] || W.theme;
     const t = W.game ? W.game.frame : W.time;
+    // 2面以降の背景は render2.js で追加
+    const ext = G.BGS && G.BGS[kind];
+    if (ext) {
+      ext(ctx, W, t);
+      if (W.def.drawBg) W.def.drawBg(ctx, W, t);
+      return;
+    }
+    ctx.drawImage(bgStatic(kind), 0, 0);
     if (kind === 'day') drawClouds(ctx, t, 'rgba(255,255,255,0.85)', 6, 90, 0.08);
     else if (kind === 'dusk') drawClouds(ctx, t, 'rgba(255,200,180,0.35)', 5, 100, 0.06);
     else if (kind === 'night') {
@@ -661,6 +668,7 @@
         ctx.fillRect(x + 5, y + 12, 5, 2);
         break;
       default:
+        if (G.DECOR && G.DECOR[d.kind]) G.DECOR[d.kind](ctx, d, x, y, t);
         break;
     }
   };

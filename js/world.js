@@ -354,7 +354,8 @@
       }
 
       // 足場の影響（ベルトコンベア等）
-      let ex = W.windX || 0;
+      // windAir の時は空中にいる間だけ風に流される（砂嵐）
+      let ex = W.windAir && this.onGround ? 0 : W.windX || 0;
       if (this.onGround) {
         for (const e of W.ents) {
           if (e.alive && e.solid && e.conveyor && e.collidable && this.isRiding(e)) {

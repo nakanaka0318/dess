@@ -143,6 +143,38 @@
         { inst: 'drum', vol: 0.17, seq: '(k h s h k k s h k h s h k k s s)*8' },
       ],
     },
+    // 2面：灼熱の砂漠（E フリジアン・ドミナント）
+    desert: {
+      bpm: 132,
+      ch: [
+        {
+          inst: 'sq25', vol: 0.07,
+          seq: `E5 . F5 . G#5 . . . A5 . G#5 . F5 . E5 . | F5 . . . E5 . . . D5 . C5 . B4 . . . |
+                E5 . F5 . G#5 . . . B5 . A5 . G#5 . A5 . | B5 . . . . . . . G#5 . F5 . E5 . . . |
+                C6 . B5 . A5 . . . B5 . A5 . G#5 . . . | A5 . G#5 . F5 . . . G#5 . F5 . E5 . . . |
+                F5 . . . G#5 . . . A5 . . . B5 . C6 . | B5 . . . G#5 . . . E5 . . . . . . .`,
+        },
+        { inst: 'sq12', vol: 0.04, seq: arp(['E', 'F', 'E', 'Dm', 'Am', 'Dm', 'F', 'E'], [0, 1, 2, 1], 0) },
+        { inst: 'tri', vol: 0.17, seq: bass(['E', 'F', 'E', 'Dm', 'Am', 'Dm', 'F', 'E'], 'R . . R . . R . H . . R . . R .', -1) },
+        { inst: 'drum', vol: 0.13, seq: '(k - - h k - s - k - h - s - h h)*8' },
+      ],
+    },
+    // 2面：太陽の神殿
+    temple: {
+      bpm: 104,
+      ch: [
+        { inst: 'sq12', vol: 0.045, seq: arp(['Dm', 'Bb', 'Gm', 'A', 'Dm', 'Bb', 'E', 'A'], [0, 2, 1, 3, 2, 1, 0, 2], 0) },
+        {
+          inst: 'sq50', vol: 0.05,
+          seq: `D5 . . . . . F5 . E5 . D5 . C#5 . . . | D5 . . . A4 . . . . . . . - - - - |
+                G5 . . . . . A5 . Bb5 . A5 . G5 . . . | E5 . . . . . . . C#5 . . . E5 . . . |
+                F5 . . . E5 . D5 . A5 . . . . . . . | Bb5 . . . A5 . G5 . F5 . . . D5 . . . |
+                G#5 . . . A5 . B5 . C6 . B5 . A5 . . . | A5 . . . . . . . - - - - C#5 . . .`,
+        },
+        { inst: 'tri', vol: 0.16, seq: bass(['Dm', 'Bb', 'Gm', 'A', 'Dm', 'Bb', 'E', 'A'], 'R . . . . . . . R . . . H . . .', -2) },
+        { inst: 'drum', vol: 0.09, seq: '(k - - - - - h - s - - - - - h -)*8' },
+      ],
+    },
     ending: {
       bpm: 96,
       ch: [

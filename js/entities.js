@@ -178,6 +178,7 @@
           ctx.fillRect(Math.round(this.cx - this.vx * i * 3), Math.round(this.cy - this.vy * i * 3), s, s);
         }
       }
+      if (G.Render.drawFruitKind && G.Render.drawFruitKind(ctx, this)) return;
       if (this.kind === 'star' || this.kind === 'rock') {
         const img = this.kind === 'star' ? G.SPR.star(this.r) : G.SPR.rockBall(this.r);
         ctx.drawImage(img, Math.round(this.cx - img.width / 2), Math.round(this.cy - img.height / 2));
