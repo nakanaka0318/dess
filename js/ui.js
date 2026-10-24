@@ -81,6 +81,28 @@
     ctx.globalAlpha = 1;
   }
 
+  // メニューを描く座標系（縦持ちではゲーム画面の下の広い領域に大きく描く）
+  G.menuView = function () {
+    const L = G.padLayout,
+      v = G.view;
+    if (L && L.portrait) {
+      const vw = window.innerWidth,
+        vh = window.innerHeight;
+      const s = Math.min(vw / 300, 2);
+      return { x: (vw - 300 * s) / 2, y: L.padTop + 12, s, w: 300, h: (vh - L.padTop - 12) / s, portrait: true };
+    }
+    return { x: v.x, y: v.y, s: v.s, w: SW, h: SH, portrait: false };
+  };
+  function withMenuView(ctx, fn) {
+    const mv = G.menuView();
+    const d = G.dpr || 1;
+    ctx.save();
+    ctx.setTransform(mv.s * d, 0, 0, mv.s * d, mv.x * d, mv.y * d);
+    fn(mv);
+    ctx.restore();
+  }
+  UI.withMenuView = withMenuView;
+
   // ---------------- メニュー ----------------
   class Menu {
     constructor(items, opts) {
@@ -109,7 +131,9 @@
         G.sfx('select');
         return this.opts.back();
       }
-      for (const tp of taps) {
+      const mv = G.menuView();
+      for (const t0 of taps) {
+        const tp = { x: (t0.cx - mv.x) / mv.s, y: (t0.cy - mv.y) / mv.s };
         for (let i = 0; i < this.rects.length; i++) {
           const r = this.rects[i];
           if (r && tp.x >= r.x && tp.x <= r.x + r.w && tp.y >= r.y && tp.y <= r.y + r.h) {
@@ -163,7 +187,7 @@
     drawSkull(ctx, 8, 7);
     textOut(ctx, String(game.deaths), 20, 12, 10, '#ffffff', 'left', false);
     textOut(ctx, G.fmtTime(game.playFrames), 92, 12, 9, '#c8c0e8', 'right', false);
-    if (W && W.def.name) {
+    if (W && W.def.name && !(W.boss && W.boss.showBar)) {
       ctx.globalAlpha = 0.75;
       textOut(ctx, W.def.name, 100, 12, 8, '#e8e2ff', 'left', '#0a0612', 2);
       ctx.globalAlpha = 1;
@@ -268,6 +292,14 @@
     ctx.globalAlpha = a;
     const rd = game.roomDeaths[game.world.id] || 0;
     textOut(ctx, `この部屋で ${rd} 回目の死`, SW / 2, 192, 8, '#b8a8d8', 'center');
+    if (game.deaths % 50 === 0 && game.deaths > 0) textOut(ctx, `祝 ${game.deaths} デス達成！`, SW / 2, 212, 11, '#ffcf4a', 'center');
+    const hint = game.world.def.hint;
+    if (hint && rd >= 3) {
+      ctx.fillStyle = 'rgba(10,6,18,0.7)';
+      roundRect(ctx, 20, 228, SW - 40, 24, 4);
+      ctx.fill();
+      textOut(ctx, 'ヒント：' + hint, SW / 2, 240, 9, '#9affc0', 'center', false);
+    }
     ctx.globalAlpha = 1;
   }
 
@@ -294,10 +326,17 @@
   function drawPause(ctx, game) {
     ctx.fillStyle = 'rgba(8,4,16,0.72)';
     ctx.fillRect(0, 0, SW, SH);
-    pixText(ctx, 'PAUSE', SW / 2, 34, 4, '#ffcf4a', '#2a1a00');
     const m = pauseMenu(game);
-    m.draw(ctx, SW / 2, 74, 23, 12);
-    textOut(ctx, `デス ${game.deaths}  /  ${G.fmtTime(game.playFrames)}  /  ${game.diff === 'easy' ? 'やさしい' : 'ふつう'}`, SW / 2, 250, 9, '#a89cc8', 'center');
+    const info = `デス ${game.deaths}  /  ${G.fmtTime(game.playFrames)}  /  ${game.diff === 'easy' ? 'やさしい' : 'ふつう'}`;
+    if (G.menuView().portrait) {
+      pixText(ctx, 'PAUSE', SW / 2, 110, 6, '#ffcf4a', '#2a1a00');
+      textOut(ctx, info, SW / 2, 160, 11, '#a89cc8', 'center');
+      withMenuView(ctx, (mv) => m.draw(ctx, mv.w / 2, 40, 34, 15));
+    } else {
+      pixText(ctx, 'PAUSE', SW / 2, 34, 4, '#ffcf4a', '#2a1a00');
+      m.draw(ctx, SW / 2, 74, 23, 12);
+      textOut(ctx, info, SW / 2, 250, 9, '#a89cc8', 'center');
+    }
   }
 
   // ---------------- エンディング ----------------
@@ -364,7 +403,7 @@
       const ch = line1[i];
       G.SPR.tiny(ctx, ch, x + 2, y0 + wob(i) + 2, '#1a0a24', s1);
       G.SPR.tiny(ctx, ch, x, y0 + wob(i), '#ffe9a8', s1);
-      x += (G.SPR.glyphW(ch) + 1) * s1;
+      x += (G.SPR.glyphW(ch, s1) + 1) * s1;
     }
     // THE MOON（O の部分が月）
     const line2 = 'THE MOON';
@@ -375,12 +414,12 @@
       const ch = line2[i];
       if (ch === 'O') {
         const img = G.SPR.moon(12, i === 5 ? 'grin' : 'calm');
-        ctx.drawImage(img, Math.round(x + 9 - img.width / 2), Math.round(y2 + 15 + wob(i) - img.height / 2));
+        ctx.drawImage(img, Math.round(x + (G.SPR.glyphW('O', s2) * s2) / 2 - img.width / 2), Math.round(y2 + 15 + wob(i) - img.height / 2));
       } else {
         G.SPR.tiny(ctx, ch, x + 3, y2 + wob(i) + 3, '#3a0010', s2);
         G.SPR.tiny(ctx, ch, x, y2 + wob(i), '#ff3a5a', s2);
       }
-      x += (G.SPR.glyphW(ch) + 1) * s2;
+      x += (G.SPR.glyphW(ch, s2) + 1) * s2;
     }
     textOut(ctx, '〜 理不尽だらけの死にゲー 〜', cx0, y2 + 46, 10, '#e8e2ff', 'center');
   }
@@ -393,10 +432,12 @@
       return;
     }
     const m = game.titleMenu;
-    if (m) m.draw(ctx, SW / 2, 160, 21, 12);
-    if (game.titleMode === 'diff') {
-      textOut(ctx, '難易度をえらんでください', SW / 2, 140, 10, '#c8c0e8', 'center');
-    }
+    withMenuView(ctx, (mv) => {
+      const big = mv.portrait;
+      const y0 = big ? 50 : 160;
+      if (m) m.draw(ctx, mv.w / 2, y0, big ? 36 : 21, big ? 16 : 12);
+      if (game.titleMode === 'diff') textOut(ctx, '難易度をえらんでください', mv.w / 2, y0 - (big ? 34 : 20), big ? 12 : 10, '#c8c0e8', 'center');
+    });
     const st = game.stats;
     if (st && st.clears > 0) {
       textOut(ctx, `★ クリア ${st.clears}回  ベスト ${st.best ? st.best.deaths + 'デス' : '-'}`, SW / 2, 270, 8, '#ffcf4a', 'center');
@@ -415,7 +456,7 @@
       drawWorldUI(ctx, W);
       drawBossBar(ctx, W);
     }
-    if (game.state !== 'ending') drawHUD(ctx, game);
+    if (game.state !== 'ending' && !(G.padLayout && G.padLayout.portrait)) drawHUD(ctx, game);
     drawAreaBanner(ctx, game);
     if (game.state === 'dead') drawDeath(ctx, game);
     if (game.state === 'pause') drawPause(ctx, game);

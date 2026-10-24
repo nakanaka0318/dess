@@ -16,6 +16,8 @@ function parseArgs(argv) {
     else if (a === '--easy') o.diff = 'easy';
     else if (a === '--w') o.w = +argv[++i];
     else if (a === '--quiet') o.quiet = true;
+    else if (a === '--robust') o.robust = +argv[++i];
+    else if (a === '--tbucket') o.tbucket = +argv[++i];
   }
   return o;
 }
@@ -211,7 +213,9 @@ function solve(G, o) {
     return res;
   }
   let field = null;
-  if (def.solverGoalPos) {
+  if (def.solverH) {
+    field = null;
+  } else if (def.solverGoalPos) {
     const [gx, gy] = def.solverGoalPos;
     field = (P) => Math.hypot(P.cx - gx, (P.cy - gy) * 1.5);
   } else if (['right', 'left', 'up', 'down'].includes(goal)) {
@@ -220,6 +224,7 @@ function solve(G, o) {
   }
   function h(W) {
     const P = W.player;
+    if (def.solverH) return def.solverH(W);
     if (field) {
       const edge = goal === 'right' ? G.W - P.cx : goal === 'left' ? P.cx : goal === 'up' ? P.cy : G.H - P.cy;
       return field(P) + Math.min(edge, 20) * 0.2;
@@ -239,7 +244,8 @@ function solve(G, o) {
       if (t.done) trig |= 1 << i % 30;
     });
     const tb = Math.floor(W.time / (o.tbucket || 45));
-    return [P.x >> 1, P.y >> 1, Math.round(P.vy * 2), P.djump ? 1 : 0, P.jumpHeld ? 1 : 0, P.coyote > 0 ? 1 : 0, W.gravity, trig, tb, W.vars.phase || 0].join(',');
+    const bul = W.bullets.map((b) => ((b.x >> 4) << 8) | (b.y >> 4)).join(':');
+    return [P.x >> 1, P.y >> 1, Math.round(P.vy * 2), P.djump ? 1 : 0, P.jumpHeld ? 1 : 0, P.coyote > 0 ? 1 : 0, W.gravity, trig, tb, W.vars.phase || 0, bul].join(',');
   }
   const seen = new Set();
   const heap = new Heap();
@@ -292,7 +298,43 @@ function describe(res) {
   return out.join(' ');
 }
 
-module.exports = { solve, describe };
+// 見つけた入力列を少しずつ揺らして再生し、成功率を測る（人間でも通せる余裕があるかの目安）
+function robustness(G, o, res, trials) {
+  const def = G.ROOMS[o.room];
+  const start = makeStart(G, o);
+  const rng = new G.RNG(1234);
+  // 入力をフレーム列に展開
+  const frames = [];
+  for (const ai of res.seq) for (let k = 0; k < res.K; k++) frames.push(res.ACT[ai]);
+  let ok = 0;
+  for (let t = 0; t < trials; t++) {
+    // 入力が変わる境目を ±2 フレームずらす
+    const seq = frames.slice();
+    for (let i = 1; i < seq.length; i++) {
+      if (seq[i] !== seq[i - 1] && rng.chance(0.8)) {
+        const d = rng.int(-2, 2);
+        if (d > 0) for (let k = 0; k < d && i + k < seq.length; k++) seq[i + k] = seq[i - 1];
+        else if (d < 0) for (let k = 1; k <= -d && i - k > 0; k++) seq[i - k] = seq[i];
+      }
+    }
+    const r = new Runner(G, o.room, Object.assign({ diff: o.diff }, start));
+    let done = false;
+    for (let i = 0; i < seq.length + 240 && !done; i++) {
+      const a = seq[Math.min(i, seq.length - 1)];
+      r.step({ left: a.dir < 0, right: a.dir > 0, jump: !!a.j && i < seq.length, shoot: !!a.s });
+      if (r.deaths.length) break;
+      if (r.exited) {
+        done = r.exited === res.goal;
+        break;
+      }
+      if (res.goal === 'boss' && r.W.boss && r.W.boss.defeated) done = true;
+    }
+    if (done) ok++;
+  }
+  return ok / trials;
+}
+
+module.exports = { solve, describe, robustness };
 
 if (require.main === module) {
   const o = parseArgs(process.argv.slice(2));
@@ -303,6 +345,7 @@ if (require.main === module) {
   if (res.ok) {
     console.log(`[OK] ${o.room} from ${o.from} -> ${res.goal}: ${res.seq.length * res.K} frames, exp=${res.exp}, sim=${res.frames} (${dt}s)`);
     console.log('  path: ' + describe(res));
+    if (o.robust) console.log(`  robustness: ${(robustness(G, o, res, o.robust) * 100).toFixed(0)}% (入力タイミング±2fで再生)`);
   } else {
     console.log(`[FAIL] ${o.room} from ${o.from} -> ${res.goal}: exp=${res.exp} (${dt}s) best=${JSON.stringify(res.best)}`);
   }

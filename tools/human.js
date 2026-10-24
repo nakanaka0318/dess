@@ -1,0 +1,249 @@
+// 「人間らしい攻略手順」を少しずつ揺らして何度も再生し、成功率を測る
+// 罠を一度知ったプレイヤーが、無理なタイミングを要求されずに突破できるかの確認用
+// 使い方: node tools/human.js [roomId ...]
+'use strict';
+const { load, Runner, spawnAt } = require('./headless');
+const G = load();
+
+// 手順の記法
+//  { go: x }                       x 座標（中心）まで歩く
+//  { wait: n }                     n フレーム待つ
+//  { jump: 'R'|'L'|0, hold, dj, djHold, steer }  ジャンプ（dj フレーム後に2段目）。着地まで steer 方向に入力
+//  { until: fn, dir }              条件を満たすまで dir 方向に入力
+//  { shoot: n }                    n フレーム撃つ
+// 流れ星が近くに降ってこない瞬間まで待つ
+const STAR_SAFE = {
+  until: (W, P) => !W.ents.some((e) => e.alive && e.kind === 'star' && e.cy < P.cy + 10 && Math.abs(e.cx - (P.cx + 40)) < 70 && e.cy > P.cy - 150),
+  dir: 0,
+};
+const S = {
+  '1-1': {
+    from: '@',
+    steps: [
+      { go: 100 }, { wait: 50 }, // リンゴを先に落とさせる…には近づく必要がある
+      { go: 150 }, { wait: 40 },
+      { go: 196 }, { wait: 45 }, // 穴の縁で待ってリンゴを先に飛ばす
+      { jump: 'R', hold: 14 },
+      { go: 318 }, { jump: 'R', hold: 12 }, // 偽看板の先のトゲを飛び越える
+      { go: 392 }, { jump: 'R', hold: 14 }, { go: 500 },
+    ],
+  },
+  '1-2': {
+    from: 'S',
+    steps: [{ go: 58 }, { jump: 'R', hold: 10 }, { go: 104 }, { jump: 'R', hold: 12 }, { go: 160 }, { jump: 'R', hold: 10 }, { go: 290 }, { go: 306 }, { wait: 90 }, { go: 500 }],
+  },
+  '1-3': {
+    from: 'S',
+    steps: [
+      { go: 92 }, { jump: 0, hold: 6 }, { wait: 30 }, // 小ジャンプでトゲを先に飛ばす
+      { go: 214 }, { jump: 'R', hold: 14, steerFrames: 24 }, // P1
+      { go: 272 }, { jump: 'R', hold: 16, dj: 18, djHold: 14, steerFrames: 50 }, // P2
+      { go: 374 }, { jump: 'R', hold: 14, steerFrames: 22 }, // P3
+      { go: 412 }, { wait: 70 }, // 天井のトゲが落ちるのを待つ
+      { go: 406 }, { jump: 'L', hold: 16, dj: 22, djHold: 14, steerFrames: 64 }, // P4
+      { go: 266 }, { jump: 'L', hold: 16, dj: 20, djHold: 16 }, // 岩棚
+      { go: 150 }, { wait: 80 }, // 月が棚を砕くのを待つ
+      { go: 126 }, { jump: 0, hold: 16, dj: 18, djHold: 16 },
+    ],
+    goal: 'up',
+  },
+  '1-4': {
+    from: 'S',
+    steps: [{ go: 122 }, { jump: 'R', hold: 12 }, { go: 192 }, { jump: 'R', hold: 12 }, { go: 272 }, { jump: 'R', hold: 12 }, { go: 352 }, { jump: 'R', hold: 12 }, { go: 500 }],
+  },
+  '2-1': {
+    from: 'S',
+    steps: [
+      { go: 96 }, { wait: 40 }, { go: 180 }, // ドッスン①を落とさせて、上がり始めたらくぐる
+      { go: 196 }, { wait: 200 }, // ドッスン②は二度落ちるので戻るまで待つ
+      { go: 278 }, { wait: 60 }, { go: 410 }, // ③は止まらず駆け抜ける
+      { go: 420 },
+    ],
+    goal: 'down',
+  },
+  '2-2': {
+    from: 'S',
+    steps: [
+      { go: 378 }, { go: 372 }, { go: 386 }, { wait: 30 }, // つらら①を落とさせる
+      { go: 312 }, { go: 330 }, { wait: 60 }, // ②は遅れて落ちるので一度引き返して待つ
+      { go: 276 }, { jump: 'L', hold: 12 }, // 石筍の上を飛ぶ
+      { go: 214 }, { wait: 50 }, // ③が落ちるのを待つ
+      { go: 186 }, { jump: 'L', hold: 4 }, // 小ジャンプでベルトへ
+      { go: -20 },
+    ],
+    goal: 'left',
+  },
+  '2-3': {
+    from: 'S',
+    steps: [
+      { go: 248 }, { jump: 'L', hold: 10 }, { go: 168 }, { jump: 'L', hold: 10 },
+      { go: 50 }, // 崩れる床の上では止まらず、地面まで行ってから
+      { until: (W, P) => W.ents.some((e) => e instanceof G.Rock && e.r === 14 && e.cx > P.cx - 46), dir: 0 },
+      { jump: 0, hold: 16 }, { go: -20 }, // 前からの岩を飛び越える
+    ],
+    goal: 'left',
+  },
+  '3-1': {
+    from: 'S',
+    steps: [{ go: 276 }, { jump: 'L', hold: 12, steerFrames: 30 }, { go: 212 }, { jump: 'L', hold: 14 }, { go: 90 }, { until: (W, P) => W.ents.some((e) => e instanceof G.Spike && e.vx < 0 && e.x < P.cx + 70), dir: 0 }, { jump: 'L', hold: 16 }, { go: -20 }],
+    goal: 'left',
+  },
+  '3-2': {
+    from: 'S',
+    steps: [
+      { go: 370 }, { jump: 0, hold: 14 }, { wait: 50 }, // オーブで天井へ
+      { go: 360 }, { wait: 60 }, // 上に落ちるリンゴを待つ
+      { go: 290 }, { jump: 'L', hold: 10 }, // 天井のトゲ
+      { go: 196 }, { jump: 'L', hold: 14 }, // 罠オーブを飛び越える
+      { go: 54 }, { wait: 40 }, { go: -20 },
+    ],
+    goal: 'left',
+  },
+  '3-3': {
+    from: 'S',
+    steps: [
+      { go: 312 }, { jump: 'L', hold: 14, steerFrames: 6 }, { go: 312 },
+      { until: (W) => W.ents.some((e) => e.kind === 'fire' && e.y > 300), dir: 0 }, // 火の玉が沈んだ瞬間に跳ぶ
+      { go: 306 }, { jump: 'L', hold: 16, steerFrames: 40 }, { go: 184 }, { jump: 'L', hold: 16, steerFrames: 40 }, // P2→P3
+      { go: 128 }, { jump: 'R', hold: 16, dj: 24, djHold: 10, steerFrames: 56 }, // P3→P4（トゲを避けて右端に着地）
+      { go: 226 }, { wait: 4 }, { jump: 0, hold: 16, dj: 20, djHold: 16 },
+    ],
+    goal: 'up',
+  },
+  '4-1': {
+    from: 'left',
+    dodge: true,
+    steps: [
+      { go: 70 }, STAR_SAFE, { jump: 'R', hold: 12 },
+      { go: 170 }, STAR_SAFE, { jump: 'R', hold: 12 },
+      { go: 270 }, STAR_SAFE, { jump: 'R', hold: 14 },
+      { go: 330 }, { wait: 45 }, { go: 350 }, STAR_SAFE, { jump: 'R', hold: 10 }, { go: 500 },
+    ],
+  },
+  '4-2': {
+    from: 'S',
+    steps: [{ go: 110 }, { jump: 0, hold: 16, dj: 18, djHold: 14 }, { wait: 30 }, { go: 120 }, { go: 124 }, { shoot: 4 }, { wait: 90 }, { go: 500 }],
+  },
+  '4-3': {
+    from: 'S',
+    steps: [
+      { go: 118 }, { jump: 'R', hold: 12 }, // バネを飛び越える
+      { go: 184 }, { jump: 0, hold: 16, dj: 18, djHold: 14, steer: 'R', steerStart: 22, steerFrames: 16 }, // A へ
+      { until: (W, P) => W.ents.some((e) => e.solid && e.code === 2 && e.x < 270), dir: 0 },
+      { go: 248 }, { jump: 'R', hold: 12 }, // 動く足場へ
+      { until: (W, P) => W.ents.some((e) => e.solid && e.code === 2 && e.x > 310), dir: 0 },
+      { go: 350 }, { jump: 'R', hold: 16 }, // B へ
+      { go: 412 }, { jump: 'L', hold: 16 }, // C の右端へ
+      { go: 346 }, { jump: 'L', hold: 10, steerFrames: 22 }, // 偽のゴール旗を飛び越える
+      { go: 300 }, { wait: 90 }, // 月が落とすリンゴを待つ
+      { go: 270 }, { jump: 0, hold: 16, dj: 18, djHold: 14 },
+    ],
+    goal: 'up',
+  },
+};
+
+// 星の軌道を少し先まで予測して、当たらない向き（進む・止まる・戻る）を選ぶ
+function dodgeDir(W, P, want) {
+  const stars = W.ents.filter((e) => e.alive && e.kind === 'star');
+  if (!stars.length) return want;
+  const onGround = (x) => W.solidAt(x, P.y + 1, P.w, P.h) || W.onewayAt(x, P.w, P.y + P.h, 1);
+  const safe = (dir) => {
+    let x = P.x;
+    for (let t = 1; t <= 36; t++) {
+      const nx = x + dir * G.PHYS.RUN;
+      if (P.onGround && dir && !onGround(Math.round(nx))) return false; // 足場から落ちない
+      x = nx;
+      for (const s of stars) {
+        const sx = s.cx + s.vx * t,
+          sy = s.cy + s.vy * t;
+        if (G.rectCircle({ x, y: P.y, w: P.w, h: P.h }, sx, sy, s.r + 3)) return false;
+      }
+    }
+    return true;
+  };
+  for (const dir of [want, 0, -want]) if (safe(dir)) return dir;
+  return want;
+}
+
+function run(id, script, rng) {
+  const from = script.from || 'S';
+  let opts;
+  if (from === 'left') opts = { enter: { x: 1, y: 3 * 20 + 20 - 14, vy: 0, djump: true, face: 1 } };
+  else opts = { spawn: spawnAt(G, id, from) };
+  const r = new Runner(G, id, opts);
+  const W = r.W;
+  const jit = (n, a) => n + (rng ? rng.int(-a, a) : 0);
+  for (const st0 of script.steps) {
+    const st = Object.assign({}, st0);
+    let guard = 0;
+    const step = (inp) => {
+      r.step(inp);
+      return r.deaths.length || r.exited;
+    };
+    if (st.go != null) {
+      const tx = jit(st.go, 2);
+      while (Math.abs(W.player.cx - tx) > 1.5 && guard++ < 900) {
+        const P = W.player;
+        const d = tx - P.cx;
+        let mv = Math.sign(d);
+        if (script.dodge) mv = dodgeDir(W, P, mv);
+        if (step({ left: mv < 0, right: mv > 0 })) break;
+      }
+    } else if (st.wait != null) {
+      const n = Math.max(0, jit(st.wait, 3));
+      for (let i = 0; i < n; i++) if (step({})) break;
+    } else if (st.jump != null) {
+      const hold = Math.max(1, jit(st.hold, 2));
+      const dj = st.dj ? jit(st.dj, 2) : 0;
+      const djHold = st.djHold ? jit(st.djHold, 2) : 0;
+      const steer = st.steer || st.jump;
+      let f = 0,
+        left = false;
+      while (guard++ < 400) {
+        const P = W.player;
+        const sf = st.steerFrames == null ? 9999 : st.steerFrames;
+        const ss = st.steerStart || 0;
+        const on = f >= ss && f < ss + sf;
+        const inp = { left: steer === 'L' && on, right: steer === 'R' && on };
+        if (f < hold) inp.jump = true;
+        if (dj && f >= dj && f < dj + djHold) inp.jump = true;
+        if (f === dj) inp.jump = false; // 押し直し
+        if (step(inp)) break;
+        f++;
+        if (!P.onGround) left = true;
+        if (left && P.onGround && f > 4) break;
+      }
+    } else if (st.until) {
+      while (!st.until(W, W.player) && guard++ < 900) if (step({ left: st.dir === 'L', right: st.dir === 'R' })) break;
+    } else if (st.shoot) {
+      for (let i = 0; i < st.shoot; i++) if (step({ shoot: i % 2 === 0 })) break;
+    }
+    if (TRACE && !rng) console.log('   ', JSON.stringify(st0, (k, v) => (typeof v === 'function' ? 'fn' : v)), '→', W.player.x, W.player.y, 't=' + W.time, r.deaths[0] ? 'DEAD ' + r.deaths[0].cause : '');
+    if (r.deaths.length || r.exited) break;
+  }
+  // 最後に出口方向へ少し進めてみる
+  for (let i = 0; i < 120 && !r.deaths.length && !r.exited; i++) r.step({});
+  const goal = script.goal || 'right';
+  return { ok: r.exited === goal, death: r.deaths[0] && r.deaths[0].cause, exit: r.exited, pos: [W.player.x, W.player.y] };
+}
+
+const TRACE = process.argv.includes('--trace');
+const only = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+let bad = 0;
+for (const id of Object.keys(S)) {
+  if (only.length && !only.includes(id)) continue;
+  const base = run(id, S[id], null);
+  const rng = new G.RNG(99);
+  let ok = 0;
+  const causes = {};
+  const N = 40;
+  for (let i = 0; i < N; i++) {
+    const r = run(id, S[id], rng);
+    if (r.ok) ok++;
+    else causes[r.death || r.exit || 'stuck'] = (causes[r.death || r.exit || 'stuck'] || 0) + 1;
+  }
+  const pct = Math.round((ok / N) * 100);
+  if (!base.ok || pct < 70) bad++;
+  console.log(`${id}: 基準手順 ${base.ok ? 'OK' : 'NG(' + (base.death || base.exit || 'stuck@' + base.pos) + ')'}  揺らし成功率 ${pct}%  ${Object.entries(causes).map(([k, v]) => k + '×' + v).join(' / ')}`);
+}
+process.exit(bad ? 1 : 0);

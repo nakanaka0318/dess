@@ -41,10 +41,13 @@
   }
 
   function place(el, b) {
-    el.style.left = b.x - b.r + 'px';
-    el.style.top = b.y - b.r + 'px';
-    el.style.width = el.style.height = b.r * 2 + 'px';
-    el.style.fontSize = Math.max(10, b.r * 0.42) + 'px';
+    const w = b.w || b.r * 2,
+      h = b.h || b.r * 2;
+    el.style.left = b.x - w / 2 + 'px';
+    el.style.top = b.y - h / 2 + 'px';
+    el.style.width = w + 'px';
+    el.style.height = h + 'px';
+    el.style.fontSize = Math.max(10, Math.min(w, h) * 0.24 + 4) + 'px';
   }
 
   function layout() {
@@ -61,43 +64,62 @@
     const L = { visible: touch };
     let gx, gy, gw, gh;
     if (touch && portrait) {
-      gw = vw - safe.l - safe.r;
+      // 縦持ち：上にゲーム画面、下にコントローラー
+      const aw = vw - safe.l - safe.r;
+      gw = aw;
       gh = (gw * SH) / SW;
       gx = safe.l;
-      gy = safe.t + Math.max(10, (vh - safe.t - safe.b) * 0.05);
-      const padTop = gy + gh + 8;
+      gy = safe.t + 8;
+      const padTop = gy + gh;
       const ph = vh - safe.b - padTop;
-      const r = G.clamp(Math.min(vw * 0.12, ph * 0.17), 28, 58);
-      const by = padTop + Math.max(ph * 0.55, r * 2.2);
+      const gap = 12,
+        mid = 20;
+      let r = Math.min(aw * 0.11, 56, ph * 0.17);
+      r = Math.min(r, (aw - 32 - gap * 2 - mid) / 8.45);
+      const by = padTop + Math.max(ph * 0.56, r * 3.2);
       L.left = { x: safe.l + 16 + r, y: by, r };
-      L.right = { x: L.left.x + r * 2 + 12, y: by, r };
-      L.jump = { x: vw - safe.r - 16 - r * 1.15, y: by - r * 0.45, r: r * 1.15 };
-      L.shoot = { x: L.jump.x - r * 2.35, y: by + r * 0.5, r };
-      L.retry = { x: vw - safe.r - 30, y: padTop + 26, r: 19 };
-      L.pause = { x: L.retry.x - 48, y: padTop + 26, r: 19 };
-      L.moveZone = { x: 0, y: padTop + 52, w: vw * 0.5, h: vh - padTop };
-      L.actZone = { x: vw * 0.5, y: padTop + 52, w: vw * 0.5, h: vh - padTop };
+      L.right = { x: L.left.x + r * 2 + gap, y: by, r };
+      L.jump = { x: vw - safe.r - 16 - r * 1.2, y: by + r * 0.2, r: r * 1.2 };
+      L.shoot = { x: L.jump.x - r * 1.2 - gap - r, y: by - r * 0.95, r };
+      L.retry = { x: vw - safe.r - 30, y: padTop + 32, r: 19 };
+      L.pause = { x: L.retry.x - 48, y: padTop + 32, r: 19 };
+      const split = (L.right.x + r + (L.shoot.x - r)) / 2;
+      L.moveZone = { x: 0, y: padTop + 58, w: split, h: vh };
+      L.actZone = { x: split, y: padTop + 58, w: vw - split, h: vh };
       L.portrait = true;
+      L.padTop = padTop;
     } else {
-      const s = Math.min((vw - safe.l - safe.r) / SW, (vh - safe.t - safe.b) / SH);
+      let s = Math.min((vw - safe.l - safe.r) / SW, (vh - safe.t - safe.b) / SH);
+      if (touch) {
+        // 横持ち：左右の余白にボタンを置き、ゲーム画面に指がかぶらないようにする
+        const side = Math.max(safe.l, safe.r);
+        const minCol = G.clamp(vw * 0.13, 96, 150);
+        if ((vw - SW * s) / 2 < minCol + side) s = Math.min(s, (vw - 2 * (minCol + side)) / SW);
+      }
       gw = SW * s;
       gh = SH * s;
-      gx = safe.l + (vw - safe.l - safe.r - gw) / 2;
+      gx = (vw - gw) / 2;
       gy = safe.t + (vh - safe.t - safe.b - gh) / 2;
       if (touch) {
-        const r = G.clamp(vh * 0.105, 26, 54);
-        const by = vh - safe.b - 14 - r;
-        L.left = { x: safe.l + 14 + r, y: by, r };
-        L.right = { x: L.left.x + r * 2 + 10, y: by, r };
-        L.jump = { x: vw - safe.r - 14 - r * 1.12, y: vh - safe.b - 16 - r * 1.12, r: r * 1.12 };
-        L.shoot = { x: L.jump.x - r * 2.3, y: L.jump.y + r * 0.35, r };
-        L.retry = { x: vw - safe.r - 24, y: safe.t + 22, r: 16 };
-        L.pause = { x: L.retry.x - 42, y: safe.t + 22, r: 16 };
-        L.moveZone = { x: 0, y: vh * 0.28, w: vw * 0.42, h: vh * 0.72 };
-        L.actZone = { x: vw * 0.58, y: vh * 0.28, w: vw * 0.42, h: vh * 0.72 };
+        const colL = gx - safe.l,
+          colR = vw - safe.r - (gx + gw);
+        const bw = Math.min((colL - 22) / 2, 64),
+          bh = Math.min(vh * 0.34, 130);
+        const by = vh - safe.b - 14 - bh / 2;
+        L.left = { x: safe.l + 8 + bw / 2, y: by, w: bw, h: bh };
+        L.right = { x: L.left.x + bw + 6, y: by, w: bw, h: bh };
+        const r = Math.min(colR * 0.4, vh * 0.15, 58);
+        const cx = gx + gw + colR / 2;
+        L.jump = { x: cx, y: vh - safe.b - 14 - r, r };
+        L.shoot = { x: cx, y: L.jump.y - r - 14 - r * 0.8, r: r * 0.8 };
+        L.retry = { x: cx + 21, y: safe.t + 24, r: 17 };
+        L.pause = { x: cx - 21, y: safe.t + 24, r: 17 };
+        L.moveZone = { x: 0, y: vh * 0.3, w: gx + gw * 0.12, h: vh };
+        L.actZone = { x: gx + gw * 0.88, y: Math.min(vh * 0.3, L.shoot.y - L.shoot.r - 10), w: vw, h: vh };
       }
     }
     G.view = { x: gx, y: gy, s: gw / SW, w: gw, h: gh };
+    G.dpr = dpr;
     G.padLayout = L;
     pad.classList.toggle('hidden', !touch);
     pad.classList.toggle('portrait', !!L.portrait);
@@ -340,11 +362,22 @@
     ctx.setTransform(v.s * dpr, 0, 0, v.s * dpr, v.x * dpr, v.y * dpr);
     ctx.imageSmoothingEnabled = true;
     G.UI.draw(ctx, game);
-    if (G.padLayout && G.padLayout.portrait) {
+    const L = G.padLayout;
+    if (L && L.portrait) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.strokeStyle = 'rgba(255,207,74,0.25)';
       ctx.lineWidth = 1;
       ctx.strokeRect(v.x + 0.5, v.y - 0.5, v.w - 1, v.h + 1);
+      if (game.world && (game.state === 'play' || game.state === 'dead')) {
+        const x0 = 18,
+          y0 = L.padTop + 26;
+        G.UI.textOut(ctx, game.world.def.name, x0, y0, 14, '#e8e2ff', 'left');
+        G.UI.drawSkull(ctx, x0, y0 + 16);
+        G.UI.textOut(ctx, `${game.deaths}    ${G.fmtTime(game.playFrames)}`, x0 + 13, y0 + 20, 13, '#ffcf4a', 'left');
+        ctx.globalAlpha = 0.45;
+        G.UI.textOut(ctx, '横向きにすると画面が大きくなります', window.innerWidth / 2, window.innerHeight - 14 - readSafe().b, 11, '#c8c0e8', 'center');
+        ctx.globalAlpha = 1;
+      }
     }
   }
 

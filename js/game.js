@@ -113,6 +113,7 @@
       this.roomDeaths[id] = (this.roomDeaths[id] || 0) + 1;
       this.state = 'dead';
       this.deadT = 0;
+      this.areaBanner = null;
       this.cause = cause;
       if (!this.headless) {
         G.Audio.duck();
@@ -159,6 +160,7 @@
       this.writePersist({ finished: true });
       this.state = 'ending';
       this.endT = 0;
+      this.areaBanner = null;
       G.music('ending');
     }
 

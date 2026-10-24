@@ -118,9 +118,36 @@
         yield 14;
       }
     }
+    // 高い所を経由して移動する（プレイヤーの横をすり抜けて体当たりしないように）
+    const HIGH = 50;
+    function* travel(cx, cy, d) {
+      d = d || 60;
+      if (k.cy > HIGH + 30) {
+        k.tweenTo(k.x, HIGH - 26, Math.round(d * 0.35), 'outQuad');
+        yield Math.round(d * 0.35);
+      }
+      k.tweenTo(cx - 26, HIGH - 26, Math.round(d * 0.4), 'inOutQuad');
+      yield Math.round(d * 0.4);
+      if (cy !== HIGH) {
+        k.tweenTo(cx - 26, cy - 26, Math.round(d * 0.3), 'inQuad');
+        yield Math.round(d * 0.3);
+      }
+    }
+    // プレイヤーから離れた位置に着地する
+    function* land() {
+      const tx = P.cx < SW / 2 ? SW - 90 : 90;
+      k.tweenTo(tx - 26, k.y, 26, 'inOutQuad');
+      yield 26;
+      k.charging = true;
+      yield 10;
+      k.charging = false;
+      k.tweenTo(k.x, FLOOR - 52, 22, 'inQuad');
+      yield 22;
+      W.shake = 6;
+      G.sfx('stomp');
+    }
     function* shower() {
-      k.tweenTo(240 - 26, 60 - 26, 40, 'inOutQuad');
-      yield 44;
+      yield* travel(240, 60, 60);
       const n = k.hp < k.maxHp / 2 ? 16 : 11;
       for (let i = 0; i < n; i++) {
         const f = W.fruit(k.cx, k.cy + 10, { cause: 'リンゴの雨に打たれた。', splat: true });
@@ -130,16 +157,12 @@
         yield 9;
       }
       yield 20;
-      k.tweenTo(k.x, FLOOR - 52, 30, 'inQuad');
-      yield 30;
-      W.shake = 6;
-      G.sfx('stomp');
+      yield* land();
     }
     function* charge() {
       const side = P.cx < SW / 2 ? 1 : -1; // プレイヤーと反対側へ
       const sx = side > 0 ? SW - 52 : 52;
-      k.tweenTo(sx - 26, FLOOR - 52, 36, 'inOutQuad');
-      yield 38;
+      yield* travel(sx, FLOOR - 26, 64);
       k.charging = true;
       G.sfx('warn');
       W.say('！', 0, 0, 40, { follow: k, dy: -6, plain: true, size: 16, color: '#ff3a5a' });
@@ -153,8 +176,7 @@
       G.sfx('stomp');
     }
     function* ring() {
-      k.tweenTo(240 - 26, 110 - 26, 36, 'inOutQuad');
-      yield 40;
+      yield* travel(240, 100, 56);
       for (let w = 0; w < 2; w++) {
         k.inflate = 20;
         G.sfx('charge');
@@ -169,16 +191,15 @@
         G.sfx('explode');
         yield 46;
       }
-      k.tweenTo(k.x, FLOOR - 52, 30, 'inQuad');
-      yield 30;
-      W.shake = 6;
-      G.sfx('stomp');
+      k.tweenTo(k.x, HIGH - 26, 20, 'outQuad');
+      yield 20;
+      yield* land();
     }
 
     W.run(function* () {
       // 登場演出：ただのリンゴが巨大化する
       const quick = opts.respawn && W.game && W.game.flags.kingSeen;
-      yield () => P.cx < 400;
+      yield () => P.cx < 330;
       W.closeGate && W.closeGate();
       G.music(null);
       if (!quick) {
@@ -194,6 +215,7 @@
       }
       setPos(240, floorCy());
       k.scale = 1;
+      for (const e of W.ents) if (e instanceof G.Sign) e.alive = false;
       if (!quick) {
         W.say('われこそは デリシャス・キング！\nリンゴの恨み、思い知るがいい！', 0, 0, 120, { follow: k, dy: -6 });
         yield 110;
@@ -267,10 +289,11 @@
       this.shakeX = 0;
     }
     hits(rect) {
-      return this.hazard && G.rectCircle(rect, this.cx, this.cy, this.r - 4);
+      return this.hazard && G.rectCircle(rect, this.cx, this.cy, this.r - 6);
     }
+    // 弾の当たり判定は光の輪のぶん少し広い（足場の上から撃てるように）
     shotBox() {
-      return { x: this.cx - this.r, y: this.cy - this.r, w: this.r * 2, h: this.r * 2 };
+      return { x: this.cx - this.r - 6, y: this.cy - this.r - 6, w: this.r * 2 + 12, h: this.r * 2 + 22 };
     }
     draw(ctx) {
       G.Render.drawMoonBoss(ctx, this);
@@ -297,7 +320,7 @@
 
   G.BOSSES.moon = function (W, opts) {
     const FLOOR = 240;
-    const HOMEY = 118;
+    const HOMEY = 104;
     const P = W.player;
     const rng = W.rng;
     const m = W.add(new MoonBoss(W, 240, -90, W.easy ? 110 : 160));
@@ -310,7 +333,7 @@
     }
     function* drift() {
       const tx = G.clamp(P.cx + rng.range(-120, 120), 100, 380);
-      yield* goTo(tx, HOMEY + rng.range(-6, 10), phase() === 3 ? 34 : 48);
+      yield* goTo(tx, HOMEY + rng.range(-6, 2), phase() === 3 ? 34 : 48);
     }
     function* crater() {
       const n = [3, 5, 7][phase() - 1];
@@ -335,7 +358,7 @@
       const n = [8, 11, 14][phase() - 1];
       const xs = [];
       for (let i = 0; i < n; i++) xs.push(rng.range(28, 452));
-      const marks = xs.map((x) => W.text(x, 8, '▼', { size: 9, color: '#fff27a' }));
+      const marks = xs.map((x) => W.text(x, 30, '▼', { size: 9, color: '#fff27a' }));
       G.sfx('warn');
       m.face = 'calm';
       yield 40;
@@ -465,6 +488,8 @@
     W.run(function* () {
       const quick = opts.respawn && W.game && W.game.flags.moonSeen;
       yield quick ? 20 : 40;
+      // 床の穴をふさぐ（プレイヤーが穴の中にいない時に）
+      yield () => P.alive && P.onGround && P.y + P.h <= 240;
       W.sealFloor && W.sealFloor();
       G.music(null);
       m.face = 'calm';

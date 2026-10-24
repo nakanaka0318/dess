@@ -91,7 +91,7 @@
     if (!L || !L.visible) return null;
     for (const n of ['pause', 'retry']) {
       const b = L[n];
-      if (b && Math.abs(x - b.x) < b.r + 12 && Math.abs(y - b.y) < b.r + 12) return { group: 'sys', btn: n };
+      if (b && Math.abs(x - b.x) < b.r + 10 && Math.abs(y - b.y) < b.r + 10) return { group: 'sys', btn: n };
     }
     if (L.moveZone && inRect(x, y, L.moveZone)) {
       const mid = (L.left.x + L.right.x) / 2;
@@ -117,11 +117,6 @@
       if (btnEls[n].classList.contains('on') !== on) btnEls[n].classList.toggle('on', on);
     }
   }
-  function toLogical(cx, cy) {
-    const v = G.view;
-    if (!v) return null;
-    return { x: (cx - v.x) / v.s, y: (cy - v.y) / v.s };
-  }
 
   function onDown(e) {
     if (G.onAnyInput) G.onAnyInput();
@@ -131,8 +126,7 @@
       recompute();
     } else {
       pointers.set(e.pointerId, { group: 'tap', btn: null });
-      const p = toLogical(e.clientX, e.clientY);
-      if (p) state.taps.push(p);
+      state.taps.push({ cx: e.clientX, cy: e.clientY });
     }
     if (e.pointerType !== 'mouse') e.preventDefault();
   }

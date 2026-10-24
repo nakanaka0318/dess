@@ -257,6 +257,7 @@
       if (W.game && W.game.save) W.game.save(W.id, this.x / T, this.y / T);
       G.sfx('save');
       W.burst(this.cx, this.cy, 14, ['#7dffb0', '#ffffff', '#ffe066'], 2, { g: 0, life: 24 });
+      W.say('セーブしました', this.cx, this.y - 6, 50, { plain: true, size: 8, color: '#9affc0' });
     }
     hitbox() {
       return { x: this.x - 4, y: this.y - 4, w: this.w + 8, h: this.h + 8 };

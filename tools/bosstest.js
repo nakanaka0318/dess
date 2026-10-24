@@ -45,6 +45,7 @@ function run(id, seed) {
         platform = b.cx < 240 ? 100 : 380;
         tx = b.y + b.h > 200 ? G.clamp(b.cx + (P.cx < b.cx ? -110 : 110), 30, 450) : platform;
       }
+      if (!b.vulnerable && !b.showBar) tx = id === '2-B' ? 200 : P.cx;
       const dx = tx - P.cx;
       if (Math.abs(dx) > 6) {
         inp.right = dx > 0;

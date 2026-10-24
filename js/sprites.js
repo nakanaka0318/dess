@@ -268,12 +268,14 @@
     },
 
     // ---------------- 3x5 ドットフォント ----------------
+    // scale 3 以上は丸みのある可変幅フォント、それ未満は 3x5 の詰めフォント
     tiny(ctx, str, x, y, color, scale) {
       scale = scale || 1;
       ctx.fillStyle = color || '#fff';
+      const F = scale >= 3 ? FONT_BIG : FONT;
       let cx = x;
       for (const ch of String(str).toUpperCase()) {
-        const g = FONT[ch] || FONT[' '];
+        const g = F[ch] || FONT[ch] || FONT[' '];
         const gw = g[0].length;
         for (let j = 0; j < 5; j++)
           for (let i = 0; i < gw; i++) if (g[j][i] === '#') ctx.fillRect(cx + i * scale, y + j * scale, scale, scale);
@@ -282,11 +284,13 @@
     },
     tinyWidth(str, scale) {
       let w = 0;
-      for (const ch of String(str).toUpperCase()) w += ((FONT[ch] || FONT[' '])[0].length + 1);
+      for (const ch of String(str)) w += G.SPR.glyphW(ch, scale) + 1;
       return (w - 1) * (scale || 1);
     },
-    glyphW(ch) {
-      return (FONT[String(ch).toUpperCase()] || FONT[' '])[0].length;
+    glyphW(ch, scale) {
+      const c = String(ch).toUpperCase();
+      const F = (scale || 1) >= 3 ? FONT_BIG : FONT;
+      return (F[c] || FONT[c] || FONT[' '])[0].length;
     },
   };
 
@@ -385,4 +389,25 @@
   FONT.W = ['#...#', '#...#', '#.#.#', '##.##', '#...#'];
   FONT.N = ['#..#', '##.#', '#.##', '#..#', '#..#'];
   G.FONT = FONT;
+  // 大きな文字用（O や G を丸く、M や W を広く）
+  const FONT_BIG = {
+    A: ['.##.', '#..#', '####', '#..#', '#..#'],
+    B: ['###.', '#..#', '###.', '#..#', '###.'],
+    C: ['.###', '#...', '#...', '#...', '.###'],
+    D: ['###.', '#..#', '#..#', '#..#', '###.'],
+    G: ['.###', '#...', '#.##', '#..#', '.###'],
+    K: ['#..#', '#.#.', '##..', '#.#.', '#..#'],
+    N: FONT.N,
+    M: FONT.M,
+    W: FONT.W,
+    O: ['.##.', '#..#', '#..#', '#..#', '.##.'],
+    P: ['###.', '#..#', '###.', '#...', '#...'],
+    Q: ['.##.', '#..#', '#..#', '#.#.', '.#.#'],
+    R: ['###.', '#..#', '###.', '#.#.', '#..#'],
+    S: ['.###', '#...', '.##.', '...#', '###.'],
+    U: ['#..#', '#..#', '#..#', '#..#', '.##.'],
+    V: ['#...#', '#...#', '.#.#.', '.#.#.', '..#..'],
+    Y: ['#...#', '.#.#.', '..#..', '..#..', '..#..'],
+    X: ['#...#', '.#.#.', '..#..', '.#.#.', '#...#'],
+  };
 })();
