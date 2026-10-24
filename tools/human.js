@@ -26,8 +26,7 @@ const S = {
   '1-1': {
     from: '@',
     steps: [
-      { go: 100 }, { wait: 50 }, // リンゴを先に落とさせる…には近づく必要がある
-      { go: 150 }, { wait: 40 },
+      { go: 142 }, { wait: 40 }, // 木の手前で一歩踏み込んで止まり、リンゴを先に落とさせる
       { go: 196 }, { wait: 45 }, // 穴の縁で待ってリンゴを先に飛ばす
       { jump: 'R', hold: 14 },
       { go: 318 }, { jump: 'R', hold: 12 }, // 偽看板の先のトゲを飛び越える
@@ -36,7 +35,7 @@ const S = {
   },
   '1-2': {
     from: 'S',
-    steps: [{ go: 58 }, { jump: 'R', hold: 10 }, { go: 104 }, { jump: 'R', hold: 12 }, { go: 160 }, { jump: 'R', hold: 10 }, { go: 290 }, { go: 306 }, { wait: 90 }, { go: 500 }],
+    steps: [{ go: 58 }, { jump: 'R', hold: 10 }, { go: 104 }, { jump: 'R', hold: 12 }, { go: 160 }, { jump: 'R', hold: 10 }, { go: 290 }, { go: 330 }, { wait: 90 }, { go: 500 }],
   },
   '1-3': {
     from: 'S',
@@ -48,7 +47,7 @@ const S = {
       { go: 412 }, { wait: 70 }, // 天井のトゲが落ちるのを待つ
       { go: 406 }, { jump: 'L', hold: 16, dj: 22, djHold: 14, steerFrames: 64 }, // P4
       { go: 266 }, { jump: 'L', hold: 16, dj: 20, djHold: 16 }, // 岩棚
-      { go: 150 }, { wait: 80 }, // 月が棚を砕くのを待つ
+      { go: 152 }, { wait: 72 }, // 棚の右端（穴の外）で止まり、月が通り過ぎるのを待つ
       { go: 126 }, { jump: 0, hold: 16, dj: 18, djHold: 16 },
     ],
     goal: 'up',
@@ -73,7 +72,7 @@ const S = {
       { go: 378 }, { go: 372 }, { go: 386 }, { wait: 30 }, // つらら①を落とさせる
       { go: 312 }, { go: 330 }, { wait: 60 }, // ②は遅れて落ちるので一度引き返して待つ
       { go: 276 }, { jump: 'L', hold: 12 }, // 石筍の上を飛ぶ
-      { go: 214 }, { wait: 50 }, // ③が落ちるのを待つ
+      { go: 206 }, { wait: 50 }, // 穴の手前で止まって③を先に落とさせる
       { go: 186 }, { jump: 'L', hold: 4 }, // 小ジャンプでベルトへ
       { go: -20 },
     ],
@@ -98,7 +97,7 @@ const S = {
     from: 'S',
     steps: [
       { go: 370 }, { jump: 0, hold: 14 }, { wait: 50 }, // オーブで天井へ
-      { go: 360 }, { wait: 60 }, // 上に落ちるリンゴを待つ
+      { go: 348 }, { wait: 60 }, // 天井を一歩進んで止まり、上に落ちるリンゴを先に通す
       { go: 290 }, { jump: 'L', hold: 10 }, // 天井のトゲ
       { go: 196 }, { jump: 'L', hold: 14 }, // 罠オーブを飛び越える
       { go: 54 }, { wait: 40 }, { go: -20 },
@@ -171,10 +170,28 @@ function dodgeDir(W, P, want) {
   return want;
 }
 
+const TRACE = process.argv.includes('--trace');
+// 画面内で危険物が動き出した（または現れた）か
+const watched = new WeakMap();
+function alarm(W) {
+  let a = false;
+  for (const e of W.ents) {
+    if (!e.alive) continue;
+    const danger = e.hazard || e.style === 'thwomp' || e instanceof G.Moon;
+    if (!danger) continue;
+    const moving = !!(e.vx || e.vy || e.ax || e.ay || e.tw || e.shakeT > 0 || e.popT > 0);
+    const prev = watched.get(e);
+    if (prev === undefined && W.time > 2 && e.t <= 1) a = true; // 新しく現れた
+    else if (prev === false && moving) a = true;
+    watched.set(e, moving);
+  }
+  return a;
+}
 function run(id, script, rng) {
   const from = script.from || 'S';
   let opts;
-  if (from === 'left') opts = { enter: { x: 1, y: 3 * 20 + 20 - 14, vy: 0, djump: true, face: 1 } };
+  if (script.enter) opts = { enter: Object.assign({ vy: 0, djump: true, face: 1 }, script.enter) };
+  else if (from === 'left') opts = { enter: { x: 1, y: 3 * 20 + 20 - 14, vy: 0, djump: true, face: 1 } };
   else opts = { spawn: spawnAt(G, id, from) };
   const r = new Runner(G, id, opts);
   const W = r.W;
@@ -188,11 +205,24 @@ function run(id, script, rng) {
     };
     if (st.go != null) {
       const tx = jit(st.go, 2);
+      let alarmAt = -1;
       while (Math.abs(W.player.cx - tx) > 1.5 && guard++ < 900) {
         const P = W.player;
         const d = tx - P.cx;
         let mv = Math.sign(d);
         if (script.dodge) mv = dodgeDir(W, P, mv);
+        // 反応する初見プレイヤー：何かが動き出したのを見てから react フレーム後に立ち止まる
+        if (script.react) {
+          if (alarmAt === -1 && alarm(W)) alarmAt = W.time;
+          if (alarmAt >= 0 && W.time - alarmAt >= script.react) {
+            // 立ち止まって様子を見てから、また進む
+            let dead = false;
+            for (let i = 0; i < 70 && !dead; i++) dead = step({});
+            if (dead) break;
+            alarmAt = -2;
+            continue;
+          }
+        }
         if (step({ left: mv < 0, right: mv > 0 })) break;
       }
     } else if (st.wait != null) {
@@ -233,7 +263,9 @@ function run(id, script, rng) {
   return { ok: r.exited === goal, death: r.deaths[0] && r.deaths[0].cause, exit: r.exited, pos: [W.player.x, W.player.y] };
 }
 
-const TRACE = process.argv.includes('--trace');
+module.exports = { run, S, G, STAR_SAFE };
+if (require.main !== module) return;
+
 const only = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 let bad = 0;
 for (const id of Object.keys(S)) {

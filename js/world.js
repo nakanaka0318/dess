@@ -486,6 +486,8 @@
       this.tilesDirty = true;
       this.vars = {};
       this.god = !!G.god;
+      this.lives = null; // ボス戦の残機（やさしいモードのみ）
+      this.invuln = 0;
       this.marksMap = {};
       this.spawnPoint = null;
       this.parse(def.map);
@@ -655,7 +657,22 @@
 
     kill(cause) {
       const P = this.player;
-      if (!P.alive || this.god) return;
+      if (!P.alive || this.god || this.invuln > 0) return;
+      // やさしいモードのボス戦：残機があれば1つ減らして耐える
+      if (this.lives != null && this.lives > 1) {
+        this.lives--;
+        this.invuln = 100;
+        this.shake = 10;
+        this.flash = 5;
+        this.flashColor = '#ff6a8a';
+        P.vy = -3.2 * this.gravity;
+        P.djump = true;
+        G.sfx('hurt');
+        G.vibrate(30);
+        this.say(`のこり ${this.lives}`, P.cx, P.y - 4, 60, { plain: true, size: 11, color: '#ff9aaa' });
+        this.burst(P.cx, P.cy, 14, ['#ff6a8a', '#ffffff'], 2, { g: 0.05, life: 20 });
+        return;
+      }
       P.alive = false;
       this.deathCause = cause || 'トゲに刺さった。';
       this.blood(P.cx, P.cy);
@@ -671,6 +688,8 @@
     step(inp) {
       this.time++;
       if (this.inputLock > 0) this.inputLock--;
+      if (this.invuln > 0) this.invuln--;
+      this.playerBlink = this.invuln > 0;
       this.stepCos();
       for (let i = 0; i < this.ents.length; i++) {
         const e = this.ents[i];

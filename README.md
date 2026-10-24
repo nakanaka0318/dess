@@ -3,6 +3,8 @@
 アイワナ（I Wanna Be The Guy）系の死にゲーです。ブラウザだけで動き、スマホのタッチ操作に対応しています。
 初見殺しの罠を覚えながら、4つのエリアと2体のボスを越えて、月を倒してください。
 
+**▶ 遊ぶ: https://nakanaka0318.github.io/dess/** （GitHub Pages）
+
 - `index.html` をブラウザで開けばそのまま遊べます（ビルド不要）
 - `node tools/build.js` で、全部入りの1ファイル版 `dist/index.html` を作れます
 
@@ -19,7 +21,7 @@
 - セーブポイントは触れるか撃つとセーブされます（偽物もあります）
 - 死ぬと死因が表示されます。同じ部屋で3回死ぬとヒントが出ます
 - 縦持ちでは画面の下がコントローラーに、横持ちでは左右の余白にボタンが並びます
-- 難易度「やさしい」はセーブポイントが増え、ボスの体力が減ります
+- 難易度「やさしい」はセーブポイントが増え、ボスの体力が減り、ボス戦では3回まで被弾に耐えます（残機3）
 - ボス戦は「ボス戦オートショット」（設定で切替）で自動連射になります
 
 ## 収録内容
@@ -48,10 +50,15 @@
 node tools/check.js        # 全部屋の読み込み・出入口の整合性・セーブ位置の確認
 node tools/verify.js       # 探索ソルバーで各部屋の入口／セーブ地点から出口へ到達できるか検証
 node tools/human.js        # 「罠を知った人間の攻略手順」をタイミングを揺らして再生し成功率を測る
+node tools/traps.js        # 罠を知らない人（動きを見て0.25秒後に止まる）が死ぬか＝初見殺しになっているか
+node tools/tune.js 1-1 c11_delay 0,4,8  # 罠のタイミング（rooms.js の TUNE 表）を振って比較
 node tools/credits-test.js # 偽エンディング（3-4）を自動操縦で突破できるか
 node tools/bosstest.js     # 両ボスを最後まで倒し切れるか（進行不能にならないか）
 node tools/build.js        # dist/ に1ファイル版を出力
 ```
+
+`main` / `claude/iwanna-moon-game` へ push すると、GitHub Actions が検証とビルドを行い `gh-pages` ブランチへ公開します
+（初回のみ Settings → Pages で Branch を `gh-pages` / root にしてください）。
 
 ブラウザでの確認用に `tools/shot.js` `tools/e2e.js`（Playwright）もあります。
 `index.html?debug&room=2-B&god=1` のようにすると、任意の部屋から無敵で始められます。

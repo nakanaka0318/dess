@@ -132,6 +132,10 @@
     djump: () => tone({ duty: 0.25, f0: 420, f1: 900, dur: 0.1, vol: 0.12 }),
     shoot: () => tone({ duty: 0.25, f0: 1100, f1: 500, dur: 0.05, vol: 0.06 }),
     bonk: () => tone({ type: 'triangle', f0: 180, f1: 90, dur: 0.06, vol: 0.18 }),
+    hurt: () => {
+      tone({ duty: 0.5, f0: 700, f1: 200, dur: 0.18, vol: 0.14 });
+      noise({ f0: 2500, f1: 600, dur: 0.12, vol: 0.12 });
+    },
     death: () => {
       noise({ f0: 4000, f1: 200, dur: 0.45, vol: 0.32 });
       tone({ duty: 0.5, f0: 520, f1: 50, dur: 0.5, vol: 0.18 });

@@ -14,6 +14,22 @@
     4: { title: 'AREA 4  月への階段', sub: '〜 あと少しで月に手が届く 〜', music: 'sky' },
   };
   const R = (G.ROOMS = {});
+
+  // 罠のタイミング調整表（tools/traps.js で「初見なら死ぬ／知っていれば避けられる」を確認しながら決めた値）
+  // trig* は作動する位置、delay は作動してから動き出すまでの無言の待ち、g は落下の加速度
+  const TUNE = (G.TUNE = Object.assign(
+    {
+      c11_trig: 138, c11_delay: 6, c11_g: 1.0, // 1-1 木のリンゴ
+      m12_trig: 326, m12_delay: 7, m12_g: 1.0, // 1-2 落ちる月
+      m13_delay: 14, // 1-3 岩棚を砕く月
+      s13_delay: 34, // 1-3 着地後の天井トゲ
+      i3_delay: 16, // 2-2 穴を跳ぶとつらら
+      a32_delay: 13, a32_g: 1.0, // 3-2 上に落ちるリンゴ
+      a43_delay: 16, // 4-3 月のリンゴ
+      st41_tele: 14, // 4-1 狙い撃ちの流れ星
+    },
+    G.TUNE || {}
+  ));
   const P = () => G.game; // eslint-disable-line no-unused-vars
   const Block = G.Block;
   const touchHint = () => (G.isTouch ? 'JUMP' : 'Shift / Z');
@@ -55,11 +71,13 @@
       W.sign(5, 11, `◀ ▶ で移動\n${touchHint()} でジャンプ（空中でもう1回）\n${shotHint()} でショット`);
       W.sign(15, 11, 'この先 安全です', { range: 30 });
 
-      // ① 木のリンゴが落ちてくる
+      // ① 木のリンゴが落ちてくる（真下に来た瞬間に一気に落ちる）
       const a1 = W.fruit(172, 152, { cause: 'リンゴは落ちてくるものだ。', splat: true });
-      W.trigPx(134, 0, 10, 280, () => {
-        a1.vel(0, 0, 0, 0.25);
-        G.sfx('whoosh');
+      W.trigPx(TUNE.c11_trig, 0, 10, 280, () => {
+        W.after(TUNE.c11_delay, () => {
+          a1.vel(0, 0.5, 0, TUNE.c11_g);
+          G.sfx('whoosh');
+        });
       });
       // ② 穴の中のリンゴが上に飛ぶ（近づくと少し遅れて発射）
       const a2 = W.fruit(230, 254, { cause: 'リンゴは上にも落ちる。' });
@@ -112,13 +130,13 @@
       // 月
       const moon = W.moon(370, 62, { r: 22, keep: true, cause: '月が落ちてきた。' });
       moon.layer = -1.5;
-      W.trigPx(300, 0, 200, 280, () => {
+      W.trigPx(TUNE.m12_trig, 0, 200, 280, () => {
         moon.face = 'grin';
-        moon.layer = 3;
-        G.sfx('trap');
-        W.after(8, () => {
-          moon.vel(0, 0, 0, 0.4);
-          moon.maxV = 12;
+        W.after(TUNE.m12_delay, () => {
+          moon.layer = 3;
+          G.sfx('trap');
+          moon.vel(0, 1, 0, TUNE.m12_g);
+          moon.maxV = 14;
           moon.bounceFloor = 240;
           moon.offscreenKill = 80;
           moon.onLand = () => {
@@ -167,9 +185,11 @@
       // ② 右上の足場に乗ると、少しして天井のトゲが落ちる（すぐ跳ぶと空中で刺さる）
       const cs = W.spike(17, 1, 'd', { cause: '着地したら一呼吸。' });
       W.trig(20, 4, 2, 2, () => {
-        cs.shakeT = 30;
-        G.sfx('trap');
-        W.after(26, () => cs.vel(0, 0, 0, 0.5));
+        W.after(TUNE.s13_delay, () => {
+          cs.shakeT = 4;
+          cs.vel(0, 1, 0, 1.0);
+          G.sfx('trap');
+        });
       }, { cond: (P) => P.onGround });
       cs.tick = function () {
         G.Spike.prototype.tick.call(this);
@@ -178,28 +198,28 @@
           this.ox = this.shakeT % 4 < 2 ? -1 : 1;
         } else if (!this.popT) this.ox = 0;
       };
-      // ③ 出口の穴から月が降ってきて足場ごと砕く（地響きが合図）
-      W.trigPx(0, 0, 160, 80, () => {
-        G.sfx('rumble');
-        W.shake = 30;
-        W.say('ゴゴゴゴ…', 70, 40, 40, { plain: true, size: 11, color: '#ffe9a8' });
-        W.after(30, () => {
-          const m = W.moon(66, -30, { r: 26, cause: '月が降ってきた。上から来るとは。', face: 'grin' });
-          m.vel(0, 3, 0, 0.5);
-          m.maxV = 11;
+      // ③ 岩棚に乗ってしばらくすると、穴の真下にいる者めがけて月が降ってくる（棚の右端だけは安全）
+      W.trigPx(0, 0, 180, 80, (P) => {
+        W.after(TUNE.m13_delay, () => {
+          const cx = G.clamp(W.player.cx, 46, 114);
+          const m = W.moon(cx, -30, { r: 26, cause: '月が降ってきた。上から来るとは。', face: 'grin' });
+          m.vel(0, 4, 0, 1.0);
+          m.maxV = 13;
           G.sfx('whoosh');
+          G.sfx('rumble');
+          W.shake = 12;
           let broke = false;
           m.tick = function () {
             if (!broke && this.y + this.h >= 84) {
               broke = true;
-              for (let tx = 1; tx <= 5; tx++) W.setTile(tx, 4, 0);
-              W.burst(60, 88, 50, ['#7a4a2a', '#4cb43c', '#5e3820'], 3, { g: 0.2, life: 50 });
+              for (let tx = 1; tx <= 5; tx++) if ((tx + 1) * T > this.x + 4 && tx * T < this.x + this.w - 4) W.setTile(tx, 4, 0);
+              W.burst(this.cx, 88, 50, ['#7a4a2a', '#4cb43c', '#5e3820'], 3, { g: 0.2, life: 50 });
               W.shake = 14;
               G.sfx('thud');
             }
           };
         });
-      }, { cond: (P) => P.y < 80 });
+      }, { cond: (P) => P.y < 80 && P.onGround });
     },
   };
 
@@ -395,7 +415,7 @@
       W.popSpike(12, 11, 'u', [12, 10, 1, 2], { cause: 'つららは下からも生える。', pal: 'ice' });
       // つらら③ 穴を飛び越えようとすると落ちる
       const i3 = W.spike(8, 8, 'd', { pal: 'ice', cause: 'ジャンプした瞬間を狙われた。' });
-      W.trigPx(0, 0, 480, 280, () => i3.vel(0, 0, 0, 0.5), { cond: (P) => P.cx < 212 && P.cx > 150 });
+      W.trigPx(0, 0, 480, 280, () => W.after(TUNE.i3_delay, () => i3.vel(0, 1, 0, 1.0)), { cond: (P) => P.cx < 212 && P.cx > 150 });
       W.sign(10, 11, '止まるな\n跳びすぎるな', { range: 26 });
     },
   };
@@ -647,8 +667,10 @@
       W.sign(19, 11, 'オーブにさわると\n重力が反転する', { range: 30 });
       W.orb(370, 190, { dir: 2 });
       // 天井から落ちる（上に）リンゴ
-      const a = W.fruit(330, 252, { cause: 'さかさまの世界ではリンゴも上に落ちる。' });
-      W.trigPx(0, 0, 480, 280, () => W.after(8, () => a.vel(0, 0, 0, -0.35)), { cond: (P) => W.gravity === -1 && P.cx < 400 });
+      const a = W.fruit(300, 252, { cause: 'さかさまの世界ではリンゴも上に落ちる。' });
+      W.trigPx(0, 0, 480, 280, () => W.after(TUNE.a32_delay, () => a.vel(0, -1, 0, -TUNE.a32_g)), {
+        cond: (P) => W.gravity === -1 && P.onGround && P.cx < 352,
+      });
       // 罠のオーブ（穴の真上で元に戻る）
       W.orb(170, 30, { dir: 1 });
       W.text(170, 62, 'このオーブで帰れます', { size: 9, color: '#c58cff' });
@@ -909,7 +931,7 @@
         W.run(function* () {
           const mk = W.text(468, 12, '✦', { size: 14, color: '#fff27a' });
           G.sfx('charge');
-          yield 32;
+          yield TUNE.st41_tele;
           mk.alive = false;
           const P = W.player;
           const sx = 470,
@@ -917,8 +939,8 @@
           const dx = P.cx - sx,
             dy = P.cy - sy;
           const d = Math.hypot(dx, dy) || 1;
-          const st = W.fruit(sx, sy, { kind: 'star', r: 8, cause: '狙われていた。' });
-          st.vel((dx / d) * 5, (dy / d) * 5);
+          const st = W.fruit(sx, sy, { kind: 'star', r: 8, cause: '狙われていた。立ち止まると危ない。' });
+          st.vel((dx / d) * 6.5, (dy / d) * 6.5);
           G.sfx('whoosh');
         });
       }, { cond: (P) => P.onGround });
@@ -1024,16 +1046,18 @@
         fs.show();
         G.sfx('pop');
       });
-      // 穴から月がのぞいてリンゴを落とす
-      W.trigPx(220, 0, 100, 60, () => {
-        const peek = W.decor(260, -18, 'moonbg', { r: 24, face: 'grin', layer: 5 });
-        peek.tweenTo(260, 4, 20, 'outQuad');
-        W.say('来たか…', 260, 30, 60, {});
-        W.after(40, () => {
-          const a = W.fruit(260, 10, { cause: '月からの贈り物。', splat: true });
-          a.vel(0, 1, 0, 0.3);
+      // 穴の下に来たところへ月がリンゴを落とし、のぞいて笑う
+      W.trigPx(220, 0, 80, 60, () => {
+        W.after(TUNE.a43_delay, () => {
+          const a = W.fruit(270, -8, { cause: '月からの贈り物。', splat: true });
+          a.vel(0, 4, 0, 0.8);
           G.sfx('whoosh');
-          peek.tweenTo(260, -40, 30, 'inQuad', () => peek.kill());
+          W.after(14, () => {
+            const peek = W.decor(260, -18, 'moonbg', { r: 24, face: 'grin', layer: 5 });
+            peek.tweenTo(260, 4, 16, 'outQuad');
+            W.say('ククク…', 260, 30, 50, {});
+            W.after(56, () => peek.tweenTo(260, -40, 24, 'inQuad', () => peek.kill()));
+          });
         });
       }, { cond: (P) => P.onGround });
     },

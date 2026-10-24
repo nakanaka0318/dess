@@ -224,6 +224,37 @@
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.fillRect(x, y, w * k, 1);
     textOut(ctx, b.name, SW / 2, y - 7, 9, '#ffe9a8', 'center');
+    if (W.lives != null) drawLives(ctx, W, 34, 33);
+  }
+  // 残機のハート
+  function drawLives(ctx, W, cx, y) {
+    const n = 3;
+    const x0 = Math.round(cx);
+    ctx.fillStyle = 'rgba(10,6,18,0.55)';
+    roundRect(ctx, x0 - 30, y - 3, 30 + n * 12 + 4, 15, 3);
+    ctx.fill();
+    for (let i = 0; i < n; i++) {
+      const on = i < W.lives;
+      const blink = !on && W.invuln > 0 && i === W.lives && Math.floor(W.time / 4) % 2;
+      drawHeart(ctx, x0 + i * 12, y, on || blink ? '#ff4a6a' : 'rgba(255,255,255,0.18)');
+    }
+    textOut(ctx, '残機', x0 - 4, y + 4.5, 8, '#ffb0c0', 'right', false);
+  }
+  function drawHeart(ctx, x, y, col) {
+    ctx.fillStyle = '#2a0010';
+    ctx.fillRect(x, y + 1, 9, 4);
+    ctx.fillRect(x + 1, y, 3, 7);
+    ctx.fillRect(x + 5, y, 3, 7);
+    ctx.fillRect(x + 2, y + 6, 5, 2);
+    ctx.fillRect(x + 3, y + 8, 3, 1);
+    ctx.fillStyle = col;
+    ctx.fillRect(x + 1, y + 1, 3, 4);
+    ctx.fillRect(x + 5, y + 1, 3, 4);
+    ctx.fillRect(x + 2, y + 5, 5, 1);
+    ctx.fillRect(x + 3, y + 6, 3, 1);
+    ctx.fillRect(x + 4, y + 7, 1, 1);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillRect(x + 2, y + 2, 1, 1);
   }
 
   function drawWorldUI(ctx, W) {

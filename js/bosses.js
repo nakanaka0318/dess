@@ -226,6 +226,7 @@
       k.hazard = true;
       k.vulnerable = true;
       W.autoFire = true;
+      if (W.easy) W.lives = 3;
       let last = '';
       for (;;) {
         const phase2 = k.hp < k.maxHp / 2;
@@ -245,6 +246,8 @@
     k.onDefeat = () => {
       G.music(null);
       W.autoFire = false;
+      W.lives = null;
+      W.invuln = 0;
       // 残っているリンゴを消す
       for (const e of W.ents) if (e instanceof G.Fruit) {
         W.burst(e.cx, e.cy, 6, ['#ff3355', '#ffd0d8'], 1.5, { g: 0.1 });
@@ -522,6 +525,7 @@
       m.hazard = true;
       m.vulnerable = true;
       W.autoFire = true;
+      if (W.easy) W.lives = 3;
       let lastPhase = 1,
         desp = false,
         last = '';
@@ -562,6 +566,8 @@
       G.music(null);
       W.autoFire = false;
       W.god = true;
+      W.lives = null;
+      W.invuln = 0;
       for (const e of W.ents) {
         if (e === m) continue;
         if (e instanceof G.Fruit || e instanceof G.Laser || e instanceof G.HazardBox || e instanceof Shadow) {

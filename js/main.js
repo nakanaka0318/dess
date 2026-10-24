@@ -181,7 +181,7 @@
       game.titleMenu = new G.UI.Menu(
         [
           { label: 'ふつう', action: () => startGame(() => game.newGame('normal')) },
-          { label: 'やさしい（セーブ多め）', action: () => startGame(() => game.newGame('easy')) },
+          { label: 'やさしい（セーブ多め・ボス戦は3機）', action: () => startGame(() => game.newGame('easy')) },
           { label: 'もどる', action: () => setTitleMode('main') },
         ],
         { back: () => setTitleMode('main') }

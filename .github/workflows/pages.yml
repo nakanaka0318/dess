@@ -1,0 +1,44 @@
+# 1ファイル版をビルドして gh-pages ブランチへ公開する（GitHub Pages）
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main, claude/iwanna-moon-game]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 検証（部屋の整合性・罠・ボス）
+        run: |
+          node tools/check.js
+          node tools/traps.js
+          node tools/credits-test.js
+          node tools/bosstest.js
+      - name: ビルド
+        run: |
+          node tools/build.js
+          mkdir site
+          cp dist/index.html site/index.html
+          touch site/.nojekyll
+      - name: gh-pages ブランチへ公開
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd site
+          git init -q -b gh-pages
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -q -m "Deploy ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
