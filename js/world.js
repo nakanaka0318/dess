@@ -517,6 +517,38 @@
         this.player.jumpHeld = e.jumpHeld;
       }
       if (def.setup) def.setup(this, opts);
+      if (opts.enter) this.unstick(opts.enter.dir);
+    }
+
+    // 画面移動の直後に壁や床に埋まっていたら、いちばん近い空いている場所へ押し出す
+    unstick(dir) {
+      const P = this.player;
+      if (!this.solidAt(P.x, P.y, P.w, P.h)) return false;
+      // 進んできた向きへの押し出しと、上（床の上に立てる方向）を少し優先する
+      const fwd = { right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1] }[dir] || [0, -1];
+      let best = null,
+        bc = Infinity;
+      for (let dy = -100; dy <= 100; dy++) {
+        for (let dx = -100; dx <= 100; dx++) {
+          const x = P.x + dx,
+            y = P.y + dy;
+          if (x < -P.w / 2 + 1 || x > SW - P.w / 2 - 1 || y < -P.h / 2 || y > SH - P.h) continue;
+          let c = Math.abs(dx) + Math.abs(dy);
+          if (dx * fwd[0] + dy * fwd[1] < 0) c += 6;
+          if (dy > 0) c += dy * 0.5;
+          if (c >= bc) continue;
+          const r = { x, y, w: P.w, h: P.h };
+          if (this.solidAt(x, y, P.w, P.h) || this.tileHazard(r)) continue;
+          best = [x, y];
+          bc = c;
+        }
+      }
+      if (!best) return false;
+      if (best[1] < P.y) P.vy = Math.min(P.vy, 0);
+      P.x = best[0];
+      P.y = best[1];
+      P.xr = P.yr = 0;
+      return true;
     }
 
     parse(map) {
