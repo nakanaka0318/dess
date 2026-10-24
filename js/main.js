@@ -171,20 +171,32 @@
     const A = G.Audio;
     game.titleMode = game.titleMode || 'main';
     if (game.titleMode === 'main') {
-      game.titleMenu = new G.UI.Menu([
-        { label: 'はじめから', action: () => setTitleMode('diff') },
+      const items = [
+        { label: 'はじめから', action: () => ((game.pickStage = 1), setTitleMode('diff')) },
         { label: 'つづきから', disabled: !game.hasContinue(), action: () => startGame(() => game.continueGame()) },
-        { label: 'せってい', action: () => setTitleMode('settings') },
-      ]);
+      ];
+      // 一度たどり着いたステージは最初から選べる
+      if ((game.stats.stageMax || 1) > 1) items.push({ label: 'ステージセレクト', action: () => setTitleMode('stage') });
+      items.push({ label: 'せってい', action: () => setTitleMode('settings') });
+      game.titleMenu = new G.UI.Menu(items);
       if (game.hasContinue()) game.titleMenu.sel = 1;
+    } else if (game.titleMode === 'stage') {
+      const items = [];
+      for (let n = 1; n <= (game.stats.stageMax || 1) && G.STAGES[n] && G.ROOMS[G.STAGES[n].start]; n++) {
+        const st = G.STAGES[n];
+        items.push({ label: `${st.title}  ${st.name}`, action: () => ((game.pickStage = n), setTitleMode('diff')) });
+      }
+      items.push({ label: 'もどる', action: () => setTitleMode('main') });
+      game.titleMenu = new G.UI.Menu(items, { back: () => setTitleMode('main') });
     } else if (game.titleMode === 'diff') {
+      const back = () => setTitleMode(game.pickStage > 1 ? 'stage' : 'main');
       game.titleMenu = new G.UI.Menu(
         [
-          { label: 'ふつう', action: () => startGame(() => game.newGame('normal')) },
-          { label: 'やさしい（セーブ多め・ボス戦は3機）', action: () => startGame(() => game.newGame('easy')) },
-          { label: 'もどる', action: () => setTitleMode('main') },
+          { label: 'ふつう', action: () => startGame(() => game.newGame('normal', game.pickStage)) },
+          { label: 'やさしい（セーブ多め・ボス戦は3機）', action: () => startGame(() => game.newGame('easy', game.pickStage)) },
+          { label: 'もどる', action: back },
         ],
-        { back: () => setTitleMode('main') }
+        { back }
       );
     } else if (game.titleMode === 'settings') {
       let confirmDel = false;
@@ -205,7 +217,7 @@
                 localStorage.removeItem('iwktm_save_v1');
               } catch (e) {}
               game.persist = null;
-              game.stats = { clears: 0, best: null };
+              game.stats = { clears: 0, best: null, stageMax: 1 };
               confirmDel = false;
               setTitleMode('main');
             },
@@ -336,6 +348,7 @@
       if (game.endT > 240 && (inp.jumpP || inp.okP || inp.shootP || taps.length)) G.toTitle();
     } else {
       if (game.state === 'dead' && taps.length && game.deadT > 10) game.retry();
+      if (game.state === 'stageclear' && taps.length && game.clearT > 100) game.startStage(game.clearedStage + 1);
       if (game.state === 'intro' && taps.length && game.introT > 20) {
         game.state = 'play';
         game.showArea();

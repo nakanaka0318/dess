@@ -57,7 +57,7 @@
   // ------------------------------------------------------------------
   class King extends Boss {
     constructor(W, cx, cy) {
-      super(W, cx - 26, cy - 26, 52, 52, { hp: W.easy ? 40 : 60, name: 'デリシャス・キング' });
+      super(W, cx - 26, cy - 26, 52, 52, { hp: 60, name: 'デリシャス・キング' });
       this.r = 26;
       this.scale = 0.25;
       this.cause = 'デリシャス・キングに押しつぶされた。';
@@ -327,7 +327,7 @@
     const HOMEY = 104;
     const P = W.player;
     const rng = W.rng;
-    const m = W.add(new MoonBoss(W, 240, -90, W.easy ? 110 : 160));
+    const m = W.add(new MoonBoss(W, 240, -90, 160));
     const phase = () => (m.hp > m.maxHp * 0.66 ? 1 : m.hp > m.maxHp * 0.33 ? 2 : 3);
     const deaths = (W.game && W.game.deaths) || 0;
 
@@ -596,23 +596,41 @@
         m.alive = false;
         m.visible = false;
         m.showBar = false;
-        yield 100;
-        // 最後のかけら……
-        const piece = W.fruit(P.cx, -12, { r: 6, cause: '' });
-        piece.hazard = false;
-        piece.vel(0, 1, 0, 0.25);
-        yield () => !P.alive || piece.cy >= P.y - 6;
-        piece.vel(P.face > 0 ? 2.4 : -2.4, -4.2, 0, 0.22);
-        G.sfx('boing');
-        W.say('ぽよん', P.cx, P.y - 6, 50, { plain: true, size: 10, color: '#ffffff' });
-        yield 70;
-        G.sfx('fanfare');
-        W.text(240, 80, 'THE MOON をたおした！', { size: 16, color: '#ffe9a8' });
-        W.text(240, 104, '空が、静かになった。', { size: 11, color: '#e8e2ff' });
-        yield 200;
-        if (W.game && W.game.finish) W.game.finish();
+        // ここで倒したことを記録（最後のかけらで死んでも、戦い直しにはならない）
+        if (W.game) {
+          W.game.flags.moonDead = true;
+          if (W.game.save) W.game.save(W.id, 2, 11);
+        }
+        W.god = !!G.god;
+        yield 60;
+        yield* aftermath(W);
       });
     };
     return m;
   };
+
+  // 月を倒した後：喜んでいるところに最後のかけらが無言で降ってくる（リトライ後も同じ）
+  function* aftermath(W) {
+    const P = W.player;
+    G.sfx('fanfare');
+    W.text(240, 80, 'THE MOON をたおした！', { size: 16, color: '#ffe9a8' });
+    W.text(240, 104, '空が、静かになった。', { size: 11, color: '#e8e2ff' });
+    yield 100;
+    const piece = W.fruit(P.cx, -14, { r: 7, keep: true, cause: '月の最後のかけら。勝って兜の緒を締めよ。' });
+    piece.vel(0, 9, 0, 0.5);
+    piece.maxV = 14;
+    yield () => !P.alive || piece.y + piece.h >= 240;
+    if (!P.alive) return;
+    piece.y = 240 - piece.h;
+    piece.hazard = false;
+    piece.vel(P.cx < piece.cx ? 1.8 : -1.8, -4, 0, 0.22);
+    piece.offscreenKill = 60;
+    G.sfx('boing');
+    W.say('ぽよん', piece.cx, 222, 50, { plain: true, size: 10, color: '#ffffff' });
+    yield 50;
+    W.say('……ちっ。', G.clamp(piece.cx, 40, 440), G.clamp(piece.cy - 14, 30, 220), 60, {});
+    yield 80;
+    if (W.game && W.game.stageClear) W.game.stageClear();
+  }
+  G.BOSSES.moonAftermath = aftermath;
 })();

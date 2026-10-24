@@ -43,12 +43,19 @@
       return !!(this.persist && this.persist.room && !this.persist.finished);
     }
 
-    newGame(diff) {
+    newGame(diff, stage) {
       this.diff = diff || 'normal';
       this.deaths = 0;
       this.playFrames = 0;
       this.flags = {};
       this.roomDeaths = {};
+      this.startStageNo = stage && G.STAGES[stage] && G.ROOMS[G.STAGES[stage].start] ? stage : 1;
+      if (this.startStageNo > 1) {
+        // ステージセレクト：そのステージの最初から
+        this.lastArea = null;
+        this.startStage(this.startStageNo);
+        return;
+      }
       const start = G.START_ROOM;
       const m = G.findMark(start, '@');
       this.saveData = { room: start, tx: m.tx, ty: m.ty, initial: true };
@@ -71,6 +78,7 @@
       this.playFrames = p.frames || 0;
       this.flags = p.flags || {};
       this.roomDeaths = p.roomDeaths || {};
+      this.startStageNo = p.startStage || 1;
       this.saveData = { room: p.room, tx: p.tx, ty: p.ty };
       if (!G.ROOMS[p.room]) {
         const m = G.findMark(G.START_ROOM, '@');
@@ -91,7 +99,7 @@
       this.persist = Object.assign(
         {
           room: s.room, tx: s.tx, ty: s.ty, diff: this.diff, deaths: this.deaths, frames: this.playFrames, flags: this.flags,
-          roomDeaths: this.roomDeaths, stats: this.stats, finished: false,
+          roomDeaths: this.roomDeaths, stats: this.stats, finished: false, startStage: this.startStageNo || 1,
         },
         extra || {}
       );
@@ -155,14 +163,49 @@
       if (def.area && def.area !== this.lastArea) {
         this.lastArea = def.area;
         const a = G.AREAS[def.area];
-        if (a) this.areaBanner = { title: a.title, sub: a.sub, t: 0 };
+        if (a) {
+          const st = G.STAGES[a.stage || 1];
+          this.areaBanner = { title: a.title, sub: st ? `${st.title}  ${a.sub}` : a.sub, t: 0 };
+        }
       }
+    }
+    stageOf(id) {
+      const d = G.ROOMS[id];
+      const a = d && G.AREAS[d.area];
+      return (a && a.stage) || 1;
+    }
+    // ステージのボスを倒した：次のステージがあればクリア画面へ、最後ならエンディング
+    stageClear() {
+      const n = this.stageOf(this.world.id);
+      const nx = G.STAGES[n + 1];
+      if (!nx || !G.ROOMS[nx.start]) return this.finish();
+      this.clearedStage = n;
+      this.stats.stageMax = Math.max(this.stats.stageMax || 1, n + 1);
+      const st = G.STAGES[n + 1];
+      const m = G.findMark(st.start, '@');
+      this.saveData = { room: st.start, tx: m.tx, ty: m.ty };
+      this.writePersist();
+      this.state = 'stageclear';
+      this.clearT = 0;
+      this.areaBanner = null;
+      if (!this.headless) G.music('ending');
+    }
+    startStage(n) {
+      const st = G.STAGES[n];
+      const m = G.findMark(st.start, '@');
+      this.saveData = { room: st.start, tx: m.tx, ty: m.ty };
+      this.writePersist();
+      this.enterRoom(st.start, { spawn: this.spawnFromSave() });
+      this.state = 'play';
+      this.lastArea = null;
+      this.showArea();
     }
     finish() {
       // エンディング到達
       this.stats.clears = (this.stats.clears || 0) + 1;
       const rec = { deaths: this.deaths, frames: this.playFrames, diff: this.diff };
-      if (!this.stats.best || rec.deaths < this.stats.best.deaths) this.stats.best = rec;
+      // ベスト記録はステージ1から通しで遊んだ時だけ
+      if ((this.startStageNo || 1) === 1 && (!this.stats.best || rec.deaths < this.stats.best.deaths)) this.stats.best = rec;
       this.writePersist({ finished: true });
       this.state = 'ending';
       this.endT = 0;
@@ -198,6 +241,11 @@
           this.world.step(inp);
           this.playFrames++;
           if (this.playFrames % 600 === 0) this.writePersist();
+          break;
+        case 'stageclear':
+          this.clearT++;
+          this.world.step(G.NO_INPUT);
+          if (this.clearT > 100 && (inp.jumpP || inp.okP || inp.shootP)) this.startStage(this.clearedStage + 1);
           break;
         case 'dead':
           this.deadT++;

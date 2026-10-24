@@ -378,6 +378,8 @@
     ['トゲの設置', 'Claude（反省していない）'],
     ['リンゴ', 'デリシャスフルーツ株式会社'],
     ['月', '月（友情出演）'],
+    ['太陽', '太陽（特別出演）'],
+    ['重力', 'アイザック・ニュートン'],
     ['テストプレイ', 'あなた'],
     ['', ''],
   ];
@@ -420,6 +422,31 @@
       textOut(ctx, G.isTouch ? 'タップでタイトルへ' : 'ジャンプでタイトルへ', SW / 2, 266, 9, '#ffcf4a', 'center');
       ctx.globalAlpha = 1;
     }
+  }
+
+  // ---------------- ステージクリア ----------------
+  function drawStageClear(ctx, game) {
+    const t = game.clearT;
+    ctx.fillStyle = `rgba(6,4,20,${Math.min(0.82, t / 50)})`;
+    ctx.fillRect(0, 0, SW, SH);
+    const a = Math.min(1, t / 30);
+    ctx.globalAlpha = a;
+    const n = game.clearedStage;
+    const sc = t < 12 ? 9 - t * 0.33 : 5;
+    pixText(ctx, `STAGE ${n} CLEAR`, SW / 2, 50 - (sc * 5) / 2, Math.round(sc), '#ffe9a8', '#2a1a00');
+    textOut(ctx, `ここまでのデス  ${game.deaths}`, SW / 2, 96, 12, '#ffffff', 'center');
+    textOut(ctx, `プレイ時間  ${G.fmtTime(game.playFrames)}`, SW / 2, 114, 11, '#c8c0e8', 'center');
+    const next = G.STAGES[n + 1];
+    if (next && t > 40) {
+      ctx.globalAlpha = Math.min(1, (t - 40) / 30);
+      textOut(ctx, `NEXT ▶ ${next.title}  ${next.name}`, SW / 2, 150, 14, '#ffcf4a', 'center');
+      (next.story || []).forEach((line, i) => textOut(ctx, line, SW / 2, 176 + i * 18, 11, '#e8e2ff', 'center'));
+    }
+    if (t > 100) {
+      ctx.globalAlpha = Math.floor(t / 25) % 2 ? 1 : 0.55;
+      textOut(ctx, G.isTouch ? 'タップで次のステージへ' : 'ジャンプで次のステージへ', SW / 2, 252, 10, '#ffcf4a', 'center');
+    }
+    ctx.globalAlpha = 1;
   }
 
   // ---------------- タイトル ----------------
@@ -468,6 +495,7 @@
       const y0 = big ? 50 : 160;
       if (m) m.draw(ctx, mv.w / 2, y0, big ? 36 : 21, big ? 16 : 12);
       if (game.titleMode === 'diff') textOut(ctx, '難易度をえらんでください', mv.w / 2, y0 - (big ? 34 : 20), big ? 12 : 10, '#c8c0e8', 'center');
+      if (game.titleMode === 'stage') textOut(ctx, 'ステージをえらんでください', mv.w / 2, y0 - (big ? 34 : 20), big ? 12 : 10, '#c8c0e8', 'center');
     });
     const st = game.stats;
     if (st && st.clears > 0) {
@@ -501,16 +529,18 @@
   UI.draw = function (ctx, game) {
     if (game.state === 'title') return UI.drawTitle(ctx, game);
     const W = game.world;
-    if (W && game.state !== 'ending') {
+    const over = game.state === 'ending' || game.state === 'stageclear';
+    if (W && !over) {
       drawWorldUI(ctx, W);
       drawBossBar(ctx, W);
     }
-    if (game.state !== 'ending' && !(G.padLayout && G.padLayout.portrait)) drawHUD(ctx, game);
+    if (!over && !(G.padLayout && G.padLayout.portrait)) drawHUD(ctx, game);
     drawAreaBanner(ctx, game);
     if (game.state === 'intro') drawIntro(ctx, game);
     if (game.state === 'dead') drawDeath(ctx, game);
     if (game.state === 'pause') drawPause(ctx, game);
     if (game.state === 'ending') drawEnding(ctx, game);
+    if (game.state === 'stageclear') drawStageClear(ctx, game);
     if (W && W.def.drawUI) W.def.drawUI(ctx, W, UI);
   };
 })();

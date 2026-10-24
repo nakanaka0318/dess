@@ -7,11 +7,21 @@
   const T = G.T;
 
   G.START_ROOM = '1-1';
+  // 1面＝エリア1〜4（中ボス：デリシャス・キング／ボス：THE MOON）、2面＝エリア5〜6、3面＝エリア7〜8
+  G.STAGES = {
+    1: { title: 'STAGE 1', name: '月を殺せ', start: '1-1' },
+    2: { title: 'STAGE 2', name: '太陽を沈めろ', start: '5-1', story: ['月が消えて、太陽が怒った。', '空がやけに暑い。'] },
+    3: { title: 'STAGE 3', name: 'すべての元凶', start: '7-1', story: ['リンゴはなぜ落ちてくるのか。', 'その答えは、空のさらに先にある。'] },
+  };
   G.AREAS = {
-    1: { title: 'AREA 1  はじまりの草原', sub: '〜 リンゴは上にも落ちる 〜', music: 'grass' },
-    2: { title: 'AREA 2  ひみつの洞窟', sub: '〜 天井を見上げるな 〜', music: 'cave' },
-    3: { title: 'AREA 3  うそつき城', sub: '〜 看板を信じるな 〜', music: 'castle' },
-    4: { title: 'AREA 4  月への階段', sub: '〜 あと少しで月に手が届く 〜', music: 'sky' },
+    1: { stage: 1, title: 'AREA 1  はじまりの草原', sub: '〜 リンゴは上にも落ちる 〜', music: 'grass' },
+    2: { stage: 1, title: 'AREA 2  ひみつの洞窟', sub: '〜 天井を見上げるな 〜', music: 'cave' },
+    3: { stage: 1, title: 'AREA 3  うそつき城', sub: '〜 看板を信じるな 〜', music: 'castle' },
+    4: { stage: 1, title: 'AREA 4  月への階段', sub: '〜 あと少しで月に手が届く 〜', music: 'sky' },
+    5: { stage: 2, title: 'AREA 5  灼熱の砂漠', sub: '〜 蜃気楼を信じるな 〜', music: 'desert' },
+    6: { stage: 2, title: 'AREA 6  太陽の神殿', sub: '〜 まぶしいものほど危ない 〜', music: 'temple' },
+    7: { stage: 3, title: 'AREA 7  さかさまの宇宙', sub: '〜 上も下もない 〜', music: 'void' },
+    8: { stage: 3, title: 'AREA 8  ニュートンの庭', sub: '〜 すべてのリンゴはここから落ちる 〜', music: 'garden' },
   };
   const R = (G.ROOMS = {});
 
@@ -532,7 +542,7 @@
   R['2-B'] = {
     hint: '突進は足場の上かジャンプでかわす。着地の後は転がるリンゴに注意。',
     area: 2,
-    name: 'BOSS デリシャス・キング',
+    name: '中ボス デリシャス・キング',
     theme: 'cave',
     exits: { right: '2-4', left: '3-1' },
     goal: 'left',
@@ -1065,9 +1075,9 @@
   };
 
   R['4-B'] = {
-    hint: '月落としは影から離れて衝撃波を飛び越える。足場の上から撃とう。',
+    hint: '月落としは影から離れて衝撃波を飛び越える。倒した後も止まらずに歩き続けよう。',
     area: 4,
-    name: 'FINAL  THE MOON',
+    name: '1面ボス THE MOON',
     theme: 'moon',
     bg: 'space',
     music: null,
@@ -1094,6 +1104,15 @@
         for (let tx = 12; tx <= 14; tx++) for (let ty = 12; ty <= 13; ty++) W.setTile(tx, ty, 1);
         W.exits.down = null;
       };
+      if (W.game && W.game.flags.moonDead) {
+        // 倒した後にやり直した：最後のかけらだけもう一度
+        W.sealFloor();
+        W.run(function* () {
+          yield 40;
+          yield* G.BOSSES.moonAftermath(W);
+        });
+        return;
+      }
       G.BOSSES.moon(W, opts);
     },
   };
