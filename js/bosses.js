@@ -385,7 +385,7 @@
         }
         sh.lock = true;
         G.sfx('warn');
-        yield 16;
+        yield phase() === 3 ? 20 : 26;
         m.x = sh.x - m.r;
         m.y = -110;
         m.face = 'rage';
@@ -398,11 +398,16 @@
         G.sfx('thud');
         G.sfx('stomp');
         W.burst(m.cx, FLOOR, 30, ['#c8c8d8', '#8a8a9e', '#fffbe0'], 3, { up: 2, g: 0.15, life: 30 });
-        const sp = phase() === 3 ? 3.4 : 2.8;
-        for (const d of [-1, 1]) {
-          const wv = W.hbox(m.cx + d * 40 - 6, FLOOR - 12, 12, 12, { kind: 'wave', cause: '衝撃波に足をすくわれた。' });
-          wv.vel(d * sp, 0);
-        }
+        // 着地の一拍あとに衝撃波が左右へ走る
+        const sp = phase() === 3 ? 3.0 : 2.4;
+        W.after(12, () => {
+          if (m.defeated) return;
+          for (const d of [-1, 1]) {
+            const wv = W.hbox(m.cx + d * (m.r - 16) - 6, FLOOR - 10, 12, 10, { kind: 'wave', cause: '衝撃波に足をすくわれた。' });
+            wv.vel(d * sp, 0);
+          }
+          G.sfx('whoosh');
+        });
         if (k < count - 1) {
           yield 22;
           yield* goTo(m.cx, -150, 26, 'inQuad');
