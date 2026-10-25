@@ -489,9 +489,73 @@
     textOut(ctx, '〜 理不尽だらけの死にゲー 〜', cx0, y2 + 46, 10, '#e8e2ff', 'center');
   }
 
+  // ---------------- アップデート履歴 ----------------
+  const UPDATES = [
+    ['2026/10/25', '4面「月の裏側」を追加', ['分かれ道と謎解き（順番スイッチ・壁の中・重力・待て・うそつき看板）', '月のかけらを3つ集めて真犯人と対決', 'まさかの結末']],
+    ['2026/10/25', 'ボスの調整', ['THE SUN の弾を遅く・少なく', 'ニュートンの樹の「果実の扇」を遅く・少なく']],
+    ['2026/10/25', '遊びやすさ', ['ポーズ画面から途中でも難易度を変えられるように', 'ボス部屋の扉から次のステージへ歩いて行けるように']],
+    ['2026/10/25', '罠とボスの強化', ['1面後半・2面・3面に理不尽な罠と死因を追加', '2面・3面のボスを弾幕で強化']],
+    ['2026/10/24', '3面「すべての元凶」を追加', ['さかさまの宇宙・ニュートンの庭', '中ボス ブラックホール／ボス ニュートンの樹']],
+    ['2026/10/24', '2面「太陽を沈めろ」を追加', ['灼熱の砂漠・太陽の神殿', '中ボス サボテン将軍／ボス THE SUN']],
+    ['2026/10/24', 'ステージ制に', ['デリシャス・キングが1面の中ボス、THE MOON が1面ボスに', '1面に理不尽な罠を追加', '月の最後のかけらでも死ぬように']],
+    ['2026/10/24', '不具合の修正', ['画面を移動した時に壁や床に埋まらないように']],
+    ['2026/10/23', '罠の調整', ['落ちてくる罠を初見殺しらしく', 'やさしいモードのボス戦は残機3']],
+    ['2026/10/23', '公開', ['I WANNA KILL THE MOON 公開']],
+  ];
+  G.UPDATES = UPDATES;
+  // タイトル右上のボタン（UI座標）
+  UI.historyButton = { x: SW - 74, y: 5, w: 68, h: 16 };
+  function drawHistoryButton(ctx, t) {
+    const b = UI.historyButton;
+    ctx.fillStyle = 'rgba(20,12,40,0.75)';
+    roundRect(ctx, b.x, b.y, b.w, b.h, 4);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,207,74,0.7)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    textOut(ctx, 'アップデート履歴', b.x + b.w / 2, b.y + b.h / 2 + 1, 8, '#ffe9a8', 'center', false);
+    // 新しい更新の印
+    if (Math.floor(t / 30) % 2) {
+      ctx.fillStyle = '#ff3a5a';
+      ctx.fillRect(b.x + b.w - 4, b.y - 1, 4, 4);
+    }
+  }
+  function drawHistory(ctx, game) {
+    ctx.fillStyle = 'rgba(6,4,16,0.92)';
+    ctx.fillRect(0, 0, SW, SH);
+    textOut(ctx, 'アップデート履歴', SW / 2, 18, 14, '#ffe9a8', 'center');
+    textOut(ctx, '×', SW - 16, 16, 14, '#ffffff', 'center');
+    // 本文（スクロール）
+    const top = 34,
+      bottom = SH - 22;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, top, SW, bottom - top);
+    ctx.clip();
+    let y = top + 10 - (game.histScroll || 0);
+    for (const [date, title, lines] of UPDATES) {
+      textOut(ctx, date, 40, y, 8, '#a89cc8', 'left', false);
+      textOut(ctx, title, 104, y, 11, '#ffcf4a', 'left', false);
+      y += 15;
+      for (const l of lines) {
+        textOut(ctx, '・' + l, 112, y, 9, '#e8e2ff', 'left', false);
+        y += 12;
+      }
+      y += 7;
+    }
+    ctx.restore();
+    game.histMax = Math.max(0, y + (game.histScroll || 0) - bottom + 10);
+    ctx.globalAlpha = 0.7;
+    textOut(ctx, G.isTouch ? '上下にスワイプでスクロール ／ タップでとじる' : '↑↓ でスクロール ／ ジャンプ・ショットでとじる', SW / 2, SH - 10, 8, '#a89cc8', 'center');
+    ctx.globalAlpha = 1;
+  }
+  UI.drawHistory = drawHistory;
+
   UI.drawTitle = function (ctx, game) {
     const ts = game.titleScene;
+    if (game.titleMode === 'history') return drawHistory(ctx, game);
     drawLogo(ctx, ts ? ts.t : 0);
+    if (!(ts && ts.gag)) drawHistoryButton(ctx, ts ? ts.t : 0);
     if (ts && ts.gag) {
       textOut(ctx, ts.gagText, SW / 2, 200, 11, '#ffffff', 'center');
       return;

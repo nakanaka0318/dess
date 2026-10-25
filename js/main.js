@@ -233,6 +233,48 @@
       );
     }
   }
+  // アップデート履歴の画面：上下でスクロール、決定・戻る・タップでとじる
+  function updateHistory(inp, taps) {
+    const max = game.histMax || 0;
+    if (inp.up) game.histScroll = Math.max(0, (game.histScroll || 0) - 3);
+    if (inp.down) game.histScroll = Math.min(max, (game.histScroll || 0) + 3);
+    if (G.histDrag) {
+      game.histScroll = G.clamp((game.histScroll || 0) - G.histDrag / G.view.s, 0, max);
+      G.histDrag = 0;
+    }
+    const close = inp.jumpP || inp.okP || inp.shootP || inp.pauseP || taps.length;
+    if (close) {
+      game.titleMode = game.prevTitleMode || 'main';
+      titleMenus();
+      G.sfx('select');
+    }
+  }
+  // キーボードの H でも開ける、ホイールとドラッグでスクロール
+  window.addEventListener('keydown', (e) => {
+    if ((e.key === 'h' || e.key === 'H') && game.state === 'title' && game.titleMode !== 'history') G.keyHistory = true;
+  });
+  window.addEventListener('wheel', (e) => {
+    if (game.state === 'title' && game.titleMode === 'history') game.histScroll = G.clamp((game.histScroll || 0) + e.deltaY * 0.3, 0, game.histMax || 0);
+  });
+  let dragY = null,
+    dragMoved = 0;
+  window.addEventListener('pointerdown', (e) => {
+    if (game.state === 'title' && game.titleMode === 'history') {
+      dragY = e.clientY;
+      dragMoved = 0;
+    }
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (dragY == null) return;
+    G.histDrag = (G.histDrag || 0) + (e.clientY - dragY);
+    dragMoved += Math.abs(e.clientY - dragY);
+    dragY = e.clientY;
+  });
+  window.addEventListener('pointerup', () => {
+    // 大きく動かした時はスクロールだけ（とじない）
+    if (dragY != null && dragMoved > 8) G.consumeTaps();
+    dragY = null;
+  });
   function setTitleMode(m) {
     game.titleMode = m;
     titleMenus();
@@ -342,7 +384,24 @@
     const taps = G.consumeTaps();
     if (game.state === 'title') {
       updateTitleScene();
-      if (!(game.titleScene.gag === 'dead')) game.titleMenu.update(inp, taps);
+      if (game.titleMode === 'history') updateHistory(inp, taps);
+      else if (!(game.titleScene.gag === 'dead')) {
+        // 右上の「アップデート履歴」ボタン
+        const v = G.view,
+          b = G.UI.historyButton;
+        const hitBtn = taps.some((t) => {
+          const x = (t.cx - v.x) / v.s,
+            y = (t.cy - v.y) / v.s;
+          return x >= b.x - 10 && x <= b.x + b.w + 10 && y >= b.y - 10 && y <= b.y + b.h + 10;
+        });
+        if (hitBtn || G.keyHistory) {
+          G.keyHistory = false;
+          game.prevTitleMode = game.titleMode;
+          game.titleMode = 'history';
+          game.histScroll = 0;
+          G.sfx('select');
+        } else game.titleMenu.update(inp, taps);
+      }
     } else if (game.state === 'pause') {
       G.UI.pauseMenu(game).update(inp, taps);
       game.frame++;
