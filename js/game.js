@@ -39,6 +39,13 @@
       this.stats = this.persist && this.persist.stats ? this.persist.stats : { clears: 0, best: null };
     }
 
+    // タイトルの設定から、つづきのセーブデータの難易度を変える
+    setContinueDiff(diff) {
+      if (!this.persist) return;
+      this.persist.diff = diff;
+      if (diff === 'easy') this.persist.easyUsed = true;
+      store.save(this.persist);
+    }
     hasContinue() {
       return !!(this.persist && this.persist.room && !this.persist.finished);
     }
@@ -49,9 +56,11 @@
       this.playFrames = 0;
       this.flags = {};
       this.roomDeaths = {};
+      this.easyUsed = this.diff === 'easy';
       this.startStageNo = stage && G.STAGES[stage] && G.ROOMS[G.STAGES[stage].start] ? stage : 1;
       if (this.startStageNo > 1) {
-        // ステージセレクト：そのステージの最初から
+        // ステージセレクト：そのステージの最初から（前のステージは倒した扱いにして、戻っても戦いにならないように）
+        for (let n = 1; n < this.startStageNo; n++) Object.assign(this.flags, G.STAGES[n].clearFlags || {}, { ['stage' + n + 'Clear']: true });
         this.lastArea = null;
         this.startStage(this.startStageNo);
         return;
@@ -79,6 +88,7 @@
       this.flags = p.flags || {};
       this.roomDeaths = p.roomDeaths || {};
       this.startStageNo = p.startStage || 1;
+      this.easyUsed = !!p.easyUsed || this.diff === 'easy';
       this.saveData = { room: p.room, tx: p.tx, ty: p.ty };
       if (!G.ROOMS[p.room]) {
         const m = G.findMark(G.START_ROOM, '@');
@@ -99,7 +109,7 @@
       this.persist = Object.assign(
         {
           room: s.room, tx: s.tx, ty: s.ty, diff: this.diff, deaths: this.deaths, frames: this.playFrames, flags: this.flags,
-          roomDeaths: this.roomDeaths, stats: this.stats, finished: false, startStage: this.startStageNo || 1,
+          roomDeaths: this.roomDeaths, stats: this.stats, finished: false, startStage: this.startStageNo || 1, easyUsed: !!this.easyUsed,
         },
         extra || {}
       );
@@ -175,20 +185,32 @@
       return (a && a.stage) || 1;
     }
     // ステージのボスを倒した：次のステージがあればクリア画面へ、最後ならエンディング
+    // 次のステージへはボス部屋の出口が開いて、そのまま歩いて行ける
     stageClear() {
       const n = this.stageOf(this.world.id);
+      this.flags['stage' + n + 'Clear'] = true;
       const nx = G.STAGES[n + 1];
       if (!nx || !G.ROOMS[nx.start]) return this.finish();
+      if (this.world.openNext) this.world.openNext(true);
       this.clearedStage = n;
       this.stats.stageMax = Math.max(this.stats.stageMax || 1, n + 1);
-      const st = G.STAGES[n + 1];
-      const m = G.findMark(st.start, '@');
-      this.saveData = { room: st.start, tx: m.tx, ty: m.ty };
       this.writePersist();
       this.state = 'stageclear';
       this.clearT = 0;
       this.areaBanner = null;
       if (!this.headless) G.music('ending');
+    }
+    // クリア画面を閉じて、ボス部屋から歩いて次のステージへ
+    resumeAfterClear() {
+      this.state = 'play';
+      if (!this.headless) G.music(null);
+    }
+    // 遊んでいる途中で難易度を切り替える
+    setDifficulty(diff) {
+      this.diff = diff;
+      if (diff === 'easy') this.easyUsed = true;
+      if (this.world && this.world.setEasy) this.world.setEasy(diff === 'easy');
+      this.writePersist();
     }
     startStage(n) {
       const st = G.STAGES[n];
@@ -203,7 +225,7 @@
     finish() {
       // エンディング到達
       this.stats.clears = (this.stats.clears || 0) + 1;
-      const rec = { deaths: this.deaths, frames: this.playFrames, diff: this.diff };
+      const rec = { deaths: this.deaths, frames: this.playFrames, diff: this.easyUsed ? 'easy' : this.diff };
       // ベスト記録はステージ1から通しで遊んだ時だけ
       if ((this.startStageNo || 1) === 1 && (!this.stats.best || rec.deaths < this.stats.best.deaths)) this.stats.best = rec;
       this.writePersist({ finished: true });
@@ -245,7 +267,7 @@
         case 'stageclear':
           this.clearT++;
           this.world.step(G.NO_INPUT);
-          if (this.clearT > 100 && (inp.jumpP || inp.okP || inp.shootP)) this.startStage(this.clearedStage + 1);
+          if (this.clearT > 100 && (inp.jumpP || inp.okP || inp.shootP)) this.resumeAfterClear();
           break;
         case 'dead':
           this.deadT++;

@@ -205,6 +205,11 @@
           { label: () => 'BGM: ' + (A.settings.bgm ? 'ON' : 'OFF'), action: () => A.setBgm(!A.settings.bgm) },
           { label: () => '効果音: ' + (A.settings.se ? 'ON' : 'OFF'), action: () => A.setSe(!A.settings.se) },
           { label: () => 'ボス戦オートショット: ' + (G.autoShot ? 'ON' : 'OFF'), action: () => G.setAutoShot(!G.autoShot) },
+          {
+            label: () => 'つづきの難易度: ' + (game.persist && game.persist.diff === 'easy' ? 'やさしい' : 'ふつう'),
+            disabled: !game.hasContinue(),
+            action: () => game.setContinueDiff(game.persist.diff === 'easy' ? 'normal' : 'easy'),
+          },
           { label: '全画面きりかえ', action: () => G.toggleFullscreen() },
           {
             label: () => (confirmDel ? 'もう一度押すと消去' : 'セーブデータ消去'),
@@ -348,7 +353,7 @@
       if (game.endT > 240 && (inp.jumpP || inp.okP || inp.shootP || taps.length)) G.toTitle();
     } else {
       if (game.state === 'dead' && taps.length && game.deadT > 10) game.retry();
-      if (game.state === 'stageclear' && taps.length && game.clearT > 100) game.startStage(game.clearedStage + 1);
+      if (game.state === 'stageclear' && taps.length && game.clearT > 100) game.resumeAfterClear();
       if (game.state === 'intro' && taps.length && game.introT > 20) {
         game.state = 'play';
         game.showArea();

@@ -71,7 +71,7 @@ for (const id of ids) {
       if (dir === 'down') for (let x = -2; x <= G.W - PW + 2; x += 2) for (const y of [0, 4]) pos.push([x, y]);
       let src;
       try {
-        src = new G.World({ diff: 'normal', flags: { kingDead: true, moonDead: true }, save() {}, onDeath() {} }, id, {});
+        src = new G.World({ diff: 'normal', flags: { kingDead: true, moonDead: true, cactusDead: true, sunDead: true, holeDead: true, treeDead: true, stage1Clear: true, stage2Clear: true }, save() {}, onDeath() {} }, id, {});
       } catch (e) {
         continue;
       }
@@ -86,7 +86,7 @@ for (const id of ids) {
         const enter = { x, y, vy: dir === 'up' ? -5 : 2, djump: true, face: 1, dir, from: id };
         let W;
         try {
-          W = new G.World({ diff: 'normal', flags: { kingDead: true, moonDead: true }, save() {}, onDeath() {} }, to, { enter });
+          W = new G.World({ diff: 'normal', flags: { kingDead: true, moonDead: true, cactusDead: true, sunDead: true, holeDead: true, treeDead: true, stage1Clear: true, stage2Clear: true }, save() {}, onDeath() {} }, to, { enter });
         } catch (e) {
           continue;
         }

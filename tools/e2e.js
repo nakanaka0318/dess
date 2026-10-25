@@ -41,8 +41,9 @@ const out = process.argv[2] || '.';
   await page.screenshot({ path: out + '/e2e-pause.png' });
   console.log('paused', await st());
   // タイトルへ戻って「つづきから」
-  for (let i = 0; i < 6; i++) {
-    await page.keyboard.press('ArrowDown');
+  // 「タイトルへ」は一番下（上へ1つで一番下に回る）
+  for (let i = 0; i < 1; i++) {
+    await page.keyboard.press('ArrowUp');
     await page.waitForTimeout(60);
   }
   await page.keyboard.press('Enter');

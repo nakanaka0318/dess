@@ -11,6 +11,7 @@ const ROUTES = [
   ['5-1', '5-2', '5-3', '5-B', '6-1', '6-2', '6-3', '6-B'],
   ['7-1', '7-2', '7-3', '7-B', '8-1', '8-2', '8-3', '8-B'],
 ];
+const EXTRA_FROM = { '5-1': ['left'], '7-1': ['left'] };
 const EXTRA = { '4-2': ['--shoot', 'action'], '5-1': ['--shoot', 'action'], '8-1': ['--shoot', 'action'] };
 // ボス部屋は bosstest.js、3-4 は credits-test.js で検証
 const SKIP = { '2-B': true, '4-B': true, '3-4': true, '5-B': true, '6-B': true, '7-B': true, '8-B': true };
@@ -26,6 +27,8 @@ function buildCases(G) {
     const prev = ROUTE[i - 1];
     const from = prev ? Object.keys(def.exits).find((d) => def.exits[d] === prev) : '@';
     cases.push([id, from, goal, EXTRA[id]]);
+    // 前のステージのボス部屋から歩いて入ってくる場合
+    if (EXTRA_FROM[id]) for (const f of EXTRA_FROM[id]) cases.push([id, f, goal, EXTRA[id]]);
     if (def.map.some((r) => r.includes('S'))) cases.push([id, 'S', goal, EXTRA[id]]);
     if (def.map.some((r) => r.includes('s'))) cases.push([id, 's', goal, (EXTRA[id] || []).concat(['--easy'])]);
   });

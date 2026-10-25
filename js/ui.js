@@ -342,6 +342,10 @@
       [
         { label: 'つづける', action: () => (game.state = 'play') },
         { label: 'セーブ地点からやり直す', action: () => game.retry() },
+        {
+          label: () => '難易度: ' + (game.diff === 'easy' ? 'やさしい（ボス戦3機）' : 'ふつう'),
+          action: () => game.setDifficulty(game.diff === 'easy' ? 'normal' : 'easy'),
+        },
         { label: () => 'BGM: ' + (A.settings.bgm ? 'ON' : 'OFF'), action: () => A.setBgm(!A.settings.bgm) },
         { label: () => '効果音: ' + (A.settings.se ? 'ON' : 'OFF'), action: () => A.setSe(!A.settings.se) },
         { label: () => 'ボス戦オートショット: ' + (G.autoShot ? 'ON' : 'OFF'), action: () => G.setAutoShot(!G.autoShot) },
@@ -365,7 +369,7 @@
       withMenuView(ctx, (mv) => m.draw(ctx, mv.w / 2, 40, 34, 15));
     } else {
       pixText(ctx, 'PAUSE', SW / 2, 34, 4, '#ffcf4a', '#2a1a00');
-      m.draw(ctx, SW / 2, 74, 23, 12);
+      m.draw(ctx, SW / 2, 70, 21, 12);
       textOut(ctx, info, SW / 2, 250, 9, '#a89cc8', 'center');
     }
   }
@@ -401,7 +405,7 @@
     const [rank, note] = rankFor(game.deaths);
     textOut(ctx, `デス数  ${game.deaths}`, SW / 2, 74, 13, '#ffffff', 'center');
     textOut(ctx, `クリアタイム  ${G.fmtTime(game.playFrames)}`, SW / 2, 94, 13, '#ffffff', 'center');
-    textOut(ctx, `難易度  ${game.diff === 'easy' ? 'やさしい' : 'ふつう'}`, SW / 2, 114, 11, '#c8c0e8', 'center');
+    textOut(ctx, `難易度  ${game.diff === 'easy' ? 'やさしい' : game.easyUsed ? 'ふつう（途中やさしい）' : 'ふつう'}`, SW / 2, 114, 11, '#c8c0e8', 'center');
     textOut(ctx, `称号「${rank}」`, SW / 2, 140, 15, '#ffcf4a', 'center');
     textOut(ctx, note, SW / 2, 160, 10, '#e8e2ff', 'center');
     ctx.globalAlpha = 1;

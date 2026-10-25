@@ -570,6 +570,15 @@
       for (const m of this.marksMap.S || []) this.add(new G.SavePoint(this, m.tx, m.ty));
       if (this.easy) for (const m of this.marksMap.s || []) this.add(new G.SavePoint(this, m.tx, m.ty, { easy: true }));
     }
+    // 難易度の途中変更：やさしい時だけのセーブを出し入れし、ボス戦中なら残機も切り替える
+    setEasy(on) {
+      this.easy = on;
+      if (on) {
+        for (const m of this.marksMap.s || [])
+          if (!this.ents.some((e) => e.alive && e instanceof G.SavePoint && e.easy && e.x === m.x && e.y === m.y)) this.add(new G.SavePoint(this, m.tx, m.ty, { easy: true }));
+      } else for (const e of this.ents) if (e instanceof G.SavePoint && e.easy) e.alive = false;
+      if (this.boss && this.boss.showBar && !this.boss.defeated) this.lives = on ? Math.max(this.lives || 0, 3) : null;
+    }
     mark(ch) {
       const a = this.marksMap[ch];
       return a ? a[0] : null;

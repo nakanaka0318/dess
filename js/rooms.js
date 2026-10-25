@@ -9,9 +9,10 @@
   G.START_ROOM = '1-1';
   // 1面＝エリア1〜4（中ボス：デリシャス・キング／ボス：THE MOON）、2面＝エリア5〜6、3面＝エリア7〜8
   G.STAGES = {
-    1: { title: 'STAGE 1', name: '月を殺せ', start: '1-1' },
-    2: { title: 'STAGE 2', name: '太陽を沈めろ', start: '5-1', story: ['月が消えて、太陽が怒った。', '空がやけに暑い。'] },
-    3: { title: 'STAGE 3', name: 'すべての元凶', start: '7-1', story: ['リンゴはなぜ落ちてくるのか。', 'その答えは、空のさらに先にある。'] },
+    // clearFlags：ステージセレクトで先のステージから始めた時に立てる撃破済みフラグ
+    1: { title: 'STAGE 1', name: '月を殺せ', start: '1-1', clearFlags: { kingDead: true, moonDead: true } },
+    2: { title: 'STAGE 2', name: '太陽を沈めろ', start: '5-1', story: ['月が消えて、太陽が怒った。', '月の部屋の右の扉から、砂漠へ。'], clearFlags: { cactusDead: true, sunDead: true } },
+    3: { title: 'STAGE 3', name: 'すべての元凶', start: '7-1', story: ['リンゴはなぜ落ちてくるのか。', '太陽の部屋の右の扉から、宇宙へ。'], clearFlags: { holeDead: true, treeDead: true } },
   };
   G.AREAS = {
     1: { stage: 1, title: 'AREA 1  はじまりの草原', sub: '〜 リンゴは上にも落ちる 〜', music: 'grass' },
@@ -1225,7 +1226,8 @@
     theme: 'moon',
     bg: 'space',
     music: null,
-    exits: { down: '4-3' },
+    exits: { down: '4-3', right: '5-1' },
+    edgeOk: ['right'], // 右の扉は1面クリア後に開く
     goal: 'boss',
     map: [
       '########################',
@@ -1248,6 +1250,21 @@
         for (let tx = 12; tx <= 14; tx++) for (let ty = 12; ty <= 13; ty++) W.setTile(tx, ty, 1);
         W.exits.down = null;
       };
+      // 1面クリア後：右の扉が開いて2面の砂漠へ（床の穴はふさいだまま）
+      W.openNext = (fx) => {
+        W.sealFloor();
+        for (let ty = 9; ty <= 11; ty++) W.setTile(23, ty, 0);
+        W.sign(21, 11, 'この先 灼熱の砂漠\n（STAGE 2）→', { range: 34 });
+        if (fx) {
+          W.burst(470, 200, 30, ['#c8c8d8', '#ffe9a8', '#ffffff'], 2.5, { g: 0.15 });
+          G.sfx('crumble');
+        }
+      };
+      if (W.game && W.game.flags.stage1Clear) {
+        W.openNext(false);
+        W.text(240, 80, '月のいない空', { size: 14, color: '#e8e2ff' });
+        return;
+      }
       if (W.game && W.game.flags.moonDead) {
         // 倒した後にやり直した：最後のかけらだけもう一度
         W.sealFloor();
