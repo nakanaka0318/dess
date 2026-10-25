@@ -345,7 +345,7 @@
       s.face = 'angry';
       G.sfx('charge');
       yield 24;
-      const n = [3, 4, 5][phase() - 1];
+      const n = [2, 3, 3][phase() - 1];
       for (let i = 0; i < n; i++) {
         const tx = G.clamp(P.cx + (i - (n - 1) / 2) * 60 + rng.range(-12, 12), 20, 460);
         const T = 48;
@@ -357,8 +357,8 @@
             this.alive = false;
             G.sfx('explode');
             W.burst(this.cx, FLOOR, 10, ['#ff7a20', '#ffd84a'], 2, { up: 1.5, g: 0.15, life: 20 });
-            for (let k = 0; k < 7; k++) {
-              const a = -Math.PI * (0.12 + (0.76 * k) / 6);
+            for (let k = 0; k < 4; k++) {
+              const a = -Math.PI * (0.12 + (0.76 * k) / 3);
               const b = fire(this.cx, FLOOR - 10, 4, '弾けたフレアに焼かれた。');
               b.vel(Math.cos(a) * 2.1, Math.sin(a) * 2.6, 0, 0.12);
             }
@@ -389,12 +389,12 @@
     // コロナ：火の輪が広がる（輪ごとに隙間の位置がずれる）
     function* corona() {
       yield* goTo(240, HOMEY, 30);
-      const rings = phase() === 3 ? 5 : 4;
+      const rings = phase() === 3 ? 3 : 2;
       for (let w = 0; w < rings; w++) {
         s.face = 'rage';
         G.sfx('charge');
         yield 20;
-        const n = 18,
+        const n = 12,
           off = (w % 2) * (Math.PI / n);
         for (let i = 0; i < n; i++) {
           const a = off + (i / n) * Math.PI * 2;
@@ -413,11 +413,11 @@
       s.face = 'rage';
       G.sfx('roar');
       yield 26;
-      const arms = phase() === 3 ? 5 : 4;
+      const arms = phase() === 3 ? 3 : 2;
       const dirSpin = rng.chance(0.5) ? 1 : -1;
       let a = rng.range(0, 6.28);
       for (let t = 0; t < 160; t++) {
-        if (t % 6 === 0) {
+        if (t % 9 === 0) {
           for (let k = 0; k < arms; k++) {
             const ang = a + (k / arms) * Math.PI * 2;
             const f = fire(s.cx + Math.cos(ang) * 30, s.cy + Math.sin(ang) * 30, 4, '太陽の渦に巻きこまれた。');
@@ -436,10 +436,10 @@
       s.face = 'angry';
       G.sfx('charge');
       yield 20;
-      const volleys = phase() === 3 ? 7 : 5;
+      const volleys = phase() === 3 ? 4 : 3;
       for (let v = 0; v < volleys; v++) {
         const a0 = Math.atan2(P.cy - s.cy, P.cx - s.cx);
-        const n = v % 2 ? 6 : 7;
+        const n = v % 2 ? 4 : 5;
         for (let i = 0; i < n; i++) {
           const a = a0 + (i - (n - 1) / 2) * 0.2;
           const f = fire(s.cx + Math.cos(a) * 34, s.cy + Math.sin(a) * 34, 4, '太陽風に吹き飛ばされた。');
@@ -463,10 +463,10 @@
         lava.y = 300 - (i / 80) * 88; // 212 まで
         yield 1;
       }
-      for (let k = 0; k < (phase() === 3 ? 5 : 4); k++) {
+      for (let k = 0; k < (phase() === 3 ? 3 : 3); k++) {
         yield 26;
         const a0 = Math.atan2(P.cy - s.cy, P.cx - s.cx);
-        for (const da of [-0.22, 0, 0.22]) {
+        for (const da of [-0.18, 0.18]) {
           const f = fire(s.cx, s.cy, 5, '狙い撃ちの火球に焼かれた。');
           f.vel(Math.cos(a0 + da) * 3, Math.sin(a0 + da) * 3);
         }
@@ -493,8 +493,8 @@
       W.run(function* () {
         let a = 0;
         for (let t = 0; t < 200 && s.dark && !s.defeated; t++) {
-          if (t % 20 === 0) {
-            for (let k = 0; k < 8; k++) {
+          if (t % 30 === 0) {
+            for (let k = 0; k < 6; k++) {
               const ang = a + (k / 8) * Math.PI * 2;
               const f = fire(s.cx, s.cy, 4, '暗闇の火の輪にふれた。');
               f.vel(Math.cos(ang) * 1.3, Math.sin(ang) * 1.3);
