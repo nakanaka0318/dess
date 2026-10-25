@@ -105,5 +105,27 @@ for (const id of ids) {
   if (bad) ok = false;
   console.log(`画面移動テスト: 埋まり ${bad} 件 / 押し出し補正 ${pushed} 件`);
 }
+// セーブ地点からやり直して、何もしないで立っているだけで死なないか（リスポーン直後の詰み防止）
+{
+  let bad = 0;
+  for (const id of ids) {
+    const map = G.ROOMS[id].map;
+    map.forEach((row, ty) => {
+      [...row].forEach((ch, tx) => {
+        if (ch !== 'S' && ch !== 's') return;
+        for (const diff of ch === 's' ? ['easy'] : ['normal', 'easy']) {
+          const r = new Runner(G, id, { spawn: { x: tx * G.T + (G.T - G.PHYS.PW) / 2, y: ty * G.T + G.T - G.PHYS.PH, face: 1 }, respawn: true, diff, flags: { kingDead: true, cactusDead: true, holeDead: true } });
+          for (let i = 0; i < 150 && !r.deaths.length; i++) r.step({});
+          if (r.deaths.length) {
+            bad++;
+            console.log(`[NG] ${id}: セーブ(${tx},${ty}) ${diff} で立っているだけで死ぬ: ${r.deaths[0].cause}`);
+          }
+        }
+      });
+    });
+  }
+  if (bad) ok = false;
+  console.log(`セーブ地点テスト: 立っているだけで死ぬ ${bad} 件`);
+}
 console.log(ok ? `OK: ${ids.length} rooms` : 'NG');
 process.exit(ok ? 0 : 1);
