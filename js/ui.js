@@ -384,6 +384,8 @@
     ['月', '月（友情出演）'],
     ['太陽', '太陽（特別出演）'],
     ['重力', 'アイザック・ニュートン'],
+    ['真犯人', 'セーブポイント'],
+    ['月', 'いいやつだった'],
     ['テストプレイ', 'あなた'],
     ['', ''],
   ];
@@ -408,6 +410,7 @@
     textOut(ctx, `難易度  ${game.diff === 'easy' ? 'やさしい' : game.easyUsed ? 'ふつう（途中やさしい）' : 'ふつう'}`, SW / 2, 114, 11, '#c8c0e8', 'center');
     textOut(ctx, `称号「${rank}」`, SW / 2, 140, 15, '#ffcf4a', 'center');
     textOut(ctx, note, SW / 2, 160, 10, '#e8e2ff', 'center');
+    if (game.endingNote) textOut(ctx, game.endingNote, SW / 2, 58, 9, '#ff9aaa', 'center');
     ctx.globalAlpha = 1;
     // スタッフロール
     const sy = 280 - Math.max(0, t - 120) * 0.35;

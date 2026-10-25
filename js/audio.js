@@ -157,6 +157,7 @@
     splat: () => noise({ f0: 2500, f1: 300, dur: 0.12, vol: 0.18 }),
     crumble: () => noise({ ft: 'bandpass', f0: 500, dur: 0.25, vol: 0.18, q: 0.8 }),
     reveal: () => tone({ type: 'triangle', f0: 1200, f1: 1600, dur: 0.08, vol: 0.12 }),
+    door: () => tone({ type: 'square', f0: 220, f1: 660, dur: 0.18, vol: 0.1 }),
     hit: () => tone({ duty: 0.125, f0: 260, f1: 160, dur: 0.05, vol: 0.12 }),
     bosshit: () => {
       tone({ duty: 0.5, f0: 200, f1: 120, dur: 0.07, vol: 0.12 });

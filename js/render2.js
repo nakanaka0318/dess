@@ -859,4 +859,280 @@
     }
     ctx.restore();
   };
+  // =====================================================================
+  // 4面
+  // =====================================================================
+  G.BGS.farside = function (ctx, W, t) {
+    ctx.drawImage(
+      staticBg('farside', (x) => {
+        grad(x, ['#020108', '#06041a', '#0e0a28']);
+        for (let i = 0; i < 120; i++) {
+          x.fillStyle = hash2(i, 5, 41) > 0.8 ? '#ffffff' : '#7a80c0';
+          x.fillRect(Math.round(hash2(i, 1, 41) * SW), Math.round(hash2(i, 2, 41) * SH), 1, 1);
+        }
+        // 地球
+        const ex = 380,
+          ey = 70,
+          er = 26;
+        x.fillStyle = 'rgba(120,180,255,0.15)';
+        x.beginPath();
+        x.arc(ex, ey, er + 6, 0, Math.PI * 2);
+        x.fill();
+        x.fillStyle = '#2a5ac8';
+        x.beginPath();
+        x.arc(ex, ey, er, 0, Math.PI * 2);
+        x.fill();
+        x.fillStyle = '#3aa04a';
+        for (const [dx, dy, r] of [[-8, -6, 9], [6, 4, 7], [-2, 12, 5], [10, -12, 4]]) {
+          x.beginPath();
+          x.arc(ex + dx, ey + dy, r, 0, Math.PI * 2);
+          x.fill();
+        }
+        x.fillStyle = 'rgba(255,255,255,0.7)';
+        x.fillRect(ex - 14, ey - 20, 12, 2);
+        x.fillRect(ex + 2, ey + 16, 10, 2);
+        x.fillStyle = 'rgba(0,0,20,0.45)';
+        x.beginPath();
+        x.arc(ex + 9, ey, er, -Math.PI / 2, Math.PI / 2);
+        x.fill();
+      }),
+      0,
+      0
+    );
+  };
+
+  Object.assign(G.DECOR, {
+    moonflag(ctx, d, x, y) {
+      ctx.save();
+      if (d.fallen) {
+        ctx.translate(x + 10, y + 40);
+        ctx.rotate((d.fallen * Math.PI) / 2);
+        ctx.translate(-x - 10, -y - 40);
+      }
+      ctx.fillStyle = '#d0d0e0';
+      ctx.fillRect(x + 9, y - 10, 2, 50);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 11, y - 10, 18, 12);
+      ctx.fillStyle = '#ff3a5a';
+      for (let i = 0; i < 3; i++) ctx.fillRect(x + 11, y - 9 + i * 4, 18, 2);
+      ctx.fillStyle = '#2a4aa8';
+      ctx.fillRect(x + 11, y - 10, 7, 6);
+      ctx.restore();
+    },
+    rabbit(ctx, d, x, y, t) {
+      const up = Math.floor(t / 12) % 2;
+      ctx.fillStyle = '#f4f0f8';
+      ctx.fillRect(x, y + 6, 12, 10);
+      ctx.fillRect(x + 2, y - 4, 3, 10);
+      ctx.fillRect(x + 7, y - 4, 3, 10);
+      ctx.fillStyle = '#ff6a8a';
+      ctx.fillRect(x + 3, y + 9, 2, 2);
+      // 杵と臼
+      ctx.fillStyle = '#8a5a2a';
+      ctx.fillRect(x + 16, y + 12, 14, 8);
+      ctx.fillRect(x + 12, y + (up ? -2 : 4), 3, 12);
+      ctx.fillStyle = '#fff6e8';
+      ctx.fillRect(x + 18, y + 10, 10, 3);
+    },
+    stump(ctx, d, x, y) {
+      ctx.fillStyle = '#5a3418';
+      ctx.fillRect(x, y + 20, 40, 20);
+      ctx.fillStyle = '#c8a070';
+      ctx.fillRect(x + 2, y + 18, 36, 4);
+      ctx.fillStyle = '#8a5a2a';
+      ctx.fillRect(x + 12, y + 19, 16, 2);
+    },
+  });
+
+  const baseFruitKind3 = R.drawFruitKind;
+  R.drawFruitKind = function (ctx, f) {
+    if (baseFruitKind3(ctx, f)) return true;
+    const cx = Math.round(f.cx),
+      cy = Math.round(f.cy);
+    if (f.kind === 'mochi') {
+      ctx.fillStyle = '#fff6e8';
+      ctx.fillRect(cx - 8, cy - 5, 16, 11);
+      ctx.fillRect(cx - 6, cy - 7, 12, 14);
+      ctx.fillStyle = '#e8dcc8';
+      ctx.fillRect(cx - 6, cy + 4, 12, 2);
+      return true;
+    }
+    if (f.kind === 'minisave' || f.kind === 'sbullet') {
+      const s = f.kind === 'minisave' ? 14 : 9;
+      ctx.fillStyle = '#1a3a2a';
+      ctx.fillRect(cx - s / 2, cy - s / 2, s, s);
+      ctx.fillStyle = '#4ae08a';
+      ctx.fillRect(cx - s / 2 + 1, cy - s / 2 + 1, s - 2, s - 2);
+      G.SPR.tiny(ctx, 'S', cx - 1, cy - 2, '#ffffff');
+      return true;
+    }
+    if (f.kind === 'err') {
+      ctx.fillStyle = '#ff3a5a';
+      ctx.fillRect(cx - 8, cy - 4, 16, 8);
+      G.SPR.tiny(ctx, 'ERR', cx - 6, cy - 2, '#ffffff');
+      return true;
+    }
+    return false;
+  };
+  const baseHazard3 = R.drawHazardBox;
+  R.drawHazardBox = function (ctx, h) {
+    if (h.kind === 'flagpole') return;
+    return baseHazard3(ctx, h);
+  };
+
+  R.drawDoor = function (ctx, d) {
+    const x = Math.round(d.x),
+      y = Math.round(d.y);
+    const t = d.W.time;
+    ctx.fillStyle = '#1a1a2a';
+    ctx.fillRect(x, y, d.w, d.h);
+    if (d.open) {
+      ctx.fillStyle = d.big ? `rgba(255,240,160,${0.6 + Math.sin(t * 0.1) * 0.2})` : '#3a2a5a';
+      ctx.fillRect(x + 3, y + 3, d.w - 6, d.h - 3);
+      if (!d.big) {
+        ctx.fillStyle = '#6a5a9a';
+        ctx.fillRect(x + 3, y + 3, d.w - 6, 2);
+        ctx.fillStyle = '#ffd84a';
+        ctx.fillRect(x + d.w - 7, y + d.h / 2, 2, 3);
+      }
+    } else {
+      // 鍵のかかった扉（ビリビリ）
+      ctx.fillStyle = '#4a4a6a';
+      ctx.fillRect(x + 3, y + 3, d.w - 6, d.h - 3);
+      ctx.fillStyle = Math.floor(t / 4) % 2 ? '#9ad0ff' : '#ffffff';
+      for (let i = 0; i < 4; i++) ctx.fillRect(x + 4 + ((i * 9 + t) % (d.w - 8)), y + 6 + i * 8, 4, 1);
+    }
+    if (d.label) G.SPR.tiny(ctx, d.label, x + d.w / 2 - 1, y - 7, '#ffe9a8');
+  };
+  R.drawPiece = function (ctx, p) {
+    const cx = Math.round(p.cx),
+      cy = Math.round(p.cy);
+    const t = p.W.time;
+    ctx.fillStyle = `rgba(255,240,160,${0.25 + Math.sin(t * 0.1) * 0.12})`;
+    circle(ctx, cx, cy, 10);
+    ctx.fillStyle = '#fff6c0';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 7);
+    ctx.lineTo(cx + 6, cy);
+    ctx.lineTo(cx, cy + 7);
+    ctx.lineTo(cx - 6, cy);
+    ctx.fill();
+    ctx.fillStyle = '#ffd84a';
+    ctx.fillRect(cx - 1, cy - 4, 2, 8);
+  };
+  R.drawMarkSwitch = function (ctx, s) {
+    const x = Math.round(s.x),
+      y = Math.round(s.y);
+    ctx.fillStyle = '#20202c';
+    ctx.fillRect(x, y, s.w, s.h);
+    ctx.fillStyle = s.on ? '#ffe9a8' : '#4a4a6a';
+    ctx.fillRect(x + 1, y + 1, s.w - 2, s.h - 2);
+    const cx = x + s.w / 2,
+      cy = y + s.h / 2;
+    if (s.mark === 'sun') {
+      ctx.fillStyle = '#ff8a10';
+      circle(ctx, cx, cy, 4);
+      for (let k = 0; k < 8; k++) ctx.fillRect(Math.round(cx + Math.cos(k * 0.785) * 6) - 1, Math.round(cy + Math.sin(k * 0.785) * 6) - 1, 2, 2);
+    } else if (s.mark === 'moon') {
+      ctx.fillStyle = '#fffbe0';
+      circle(ctx, cx, cy, 5);
+      ctx.fillStyle = s.on ? '#ffe9a8' : '#4a4a6a';
+      circle(ctx, cx + 3, cy - 2, 4);
+    } else {
+      ctx.fillStyle = '#fff27a';
+      ctx.beginPath();
+      for (let k = 0; k < 10; k++) {
+        const a = -Math.PI / 2 + (k * Math.PI) / 5,
+          r = k % 2 ? 2.5 : 6;
+        ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+      }
+      ctx.fill();
+    }
+  };
+  R.drawSockets = function (ctx, W, cx, y) {
+    const got = W.vars.sockets || [];
+    for (let i = 0; i < 3; i++) {
+      const x = cx - 24 + i * 24;
+      ctx.fillStyle = '#20202c';
+      circle(ctx, x, y, 7);
+      if (got[i]) {
+        ctx.fillStyle = '#fff6c0';
+        ctx.beginPath();
+        ctx.moveTo(x, y - 6);
+        ctx.lineTo(x + 5, y);
+        ctx.lineTo(x, y + 6);
+        ctx.lineTo(x - 5, y);
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = '#6a6a8a';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  };
+  R.drawWaitMeter = function (ctx, k) {
+    ctx.fillStyle = 'rgba(10,6,18,0.7)';
+    ctx.fillRect(190, 30, 100, 8);
+    ctx.fillStyle = k > 0.8 ? '#ff6a8a' : '#9affc0';
+    ctx.fillRect(191, 31, Math.round(98 * Math.min(1, k)), 6);
+    G.SPR.tiny(ctx, String(Math.ceil(5 - Math.min(1, k) * 5)), 237, 20, '#ffffff', 2);
+  };
+  // 偽のセーブデータ消去画面（UIレイヤー）
+  R.drawFakeDelete = function (ctx, pct, text) {
+    const W0 = G.W,
+      H0 = G.H;
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+    ctx.fillRect(0, 0, W0, H0);
+    ctx.fillStyle = '#d8d8e0';
+    ctx.fillRect(110, 100, 260, 80);
+    ctx.fillStyle = '#20307a';
+    ctx.fillRect(110, 100, 260, 14);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '9px "DotGothic16", monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('システム', 116, 107);
+    ctx.fillStyle = '#101018';
+    ctx.font = '11px "DotGothic16", monospace';
+    ctx.fillText(text || '', 122, 132);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(122, 150, 236, 12);
+    ctx.fillStyle = '#2a8a4a';
+    ctx.fillRect(123, 151, Math.round(234 * pct / 100), 10);
+    ctx.fillStyle = '#101018';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${pct}%`, 358, 172);
+    ctx.textAlign = 'left';
+  };
+  R.drawSaveBoss = function (ctx, b) {
+    if (!b.visible) return;
+    const x = Math.round(b.x + (b.shakeX || 0) + (b.glitch > 0 ? (b.glitch % 3) - 1 : 0) * 3),
+      y = Math.round(b.y);
+    ctx.fillStyle = 'rgba(154,255,192,0.15)';
+    ctx.fillRect(x - 6, y - 6, b.w + 12, b.h + 12);
+    ctx.fillStyle = '#0e2a1a';
+    ctx.fillRect(x, y, b.w, b.h);
+    ctx.fillStyle = b.hurtT > 0 ? '#ffffff' : '#3ad07a';
+    ctx.fillRect(x + 3, y + 3, b.w - 6, b.h - 6);
+    ctx.fillStyle = '#9affc0';
+    ctx.fillRect(x + 3, y + 3, b.w - 6, 4);
+    G.SPR.tiny(ctx, 'SAVE', x + 10, y + b.h - 16, '#ffffff', 2);
+    // 顔
+    ctx.fillStyle = '#0e2a1a';
+    ctx.fillRect(x + 12, y + 14, 10, 8);
+    ctx.fillRect(x + 38, y + 14, 10, 8);
+    ctx.fillStyle = b.face === 'hurt' ? '#ffffff' : '#ff3040';
+    ctx.fillRect(x + 16, y + 17, 3, 3);
+    ctx.fillRect(x + 42, y + 17, 3, 3);
+    ctx.fillStyle = '#0e2a1a';
+    ctx.fillRect(x + 10, y + 10, 12, 2);
+    ctx.fillRect(x + 38, y + 10, 12, 2);
+    ctx.fillRect(x + 18, y + 28, 24, 3);
+    if (b.glitch > 0) {
+      ctx.fillStyle = 'rgba(255,58,90,0.5)';
+      ctx.fillRect(x, y + ((b.glitch * 7) % b.h), b.w, 3);
+    }
+  };
 })();

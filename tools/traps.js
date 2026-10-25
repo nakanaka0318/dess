@@ -82,6 +82,17 @@ const NAIVE = [
   { id: '7-3', name: '光った時だけのトゲ', enter: { x: 366, y: 186 }, steps: [{ wait: 140 }], expect: /光った瞬間/ },
   { id: '8-1', name: '禁断の果実', enter: { x: 380, y: 226 }, steps: [{ go: 500 }], expect: /禁断/ },
   { id: '8-2', name: '果物かご', enter: { x: 344, y: 226 }, steps: [{ go: 380 }, { wait: 60 }], expect: /果物かご/ },
+  // 4面
+  { id: '9-1', name: '倒れる旗', from: 'S', steps: [{ go: 92 }, { jump: 'R', hold: 12 }, { go: 500 }], expect: /人類/ },
+  { id: '9-1', name: 'うさぎの餅', enter: { x: 196, y: 226 }, steps: [{ go: 500 }], expect: /うさぎ/ },
+  { id: '9-1', name: '隕石', enter: { x: 250, y: 226 }, steps: [{ go: 272 }, { jump: 'R', hold: 14 }, { go: 500 }], expect: /クレーター/ },
+  { id: '9-H', name: '鍵のかかった扉', enter: { x: 20, y: 226 }, steps: [{ go: 500 }], expect: /せっかち/ },
+  { id: '9-B1', name: '順番ちがい', enter: { x: 20, y: 226 }, steps: [{ go: 300 }, { shoot: 20 }, { wait: 80 }], expect: /順番/ },
+  { id: '9-B2', name: '偽のかけら', enter: { x: 20, y: 226 }, steps: [{ go: 500 }], expect: /偽物/ },
+  { id: '9-C2', name: '看板の前で待つ', enter: { x: 20, y: 226 }, steps: [{ go: 190 }, { wait: 300 }], expect: /そこで待て/ },
+  { id: '9-A1', name: '扉A', enter: { x: 140, y: 226 }, steps: [{ go: 210 }], goal: 'warp:9-A2', expect: /宇宙/ },
+  { id: '9-A2', name: 'かけらの下', from: 'S', steps: [{ go: 500 }], expect: /空洞/ },
+  { id: '9-A3', name: 'クリアボタン', from: 'S', steps: [{ go: 140 }, { go: 136 }, { shoot: 6 }, { wait: 200 }], expect: /ボタン/ },
   { id: '8-3', name: '看板もハズレ', enter: { x: 370, y: 226 }, steps: [{ go: 410 }, { wait: 60 }], expect: /看板も/ },
 ];
 

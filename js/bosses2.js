@@ -1239,6 +1239,7 @@
       G.music(null);
       W.autoFire = false;
       W.god = true;
+      markDead(W, 'treeDead', 5, 11);
       W.lives = null;
       W.invuln = 0;
       W.windX = 0;

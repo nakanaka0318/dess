@@ -205,6 +205,11 @@
       this.state = 'play';
       if (!this.headless) G.music(null);
     }
+    // 扉で別の部屋へ移動する（4面）
+    warp(id, tx, ty) {
+      this.enterRoom(id, { spawn: { x: tx * T + (T - PHYS.PW) / 2, y: ty * T + T - PHYS.PH, face: 1 } });
+      this.showArea();
+    }
     // 遊んでいる途中で難易度を切り替える
     setDifficulty(diff) {
       this.diff = diff;

@@ -4,7 +4,7 @@ const vm = require('vm');
 const fs = require('fs');
 const path = require('path');
 
-const CORE = ['util', 'world', 'entities', 'bosses', 'bosses2', 'rooms', 'rooms2', 'game'];
+const CORE = ['util', 'world', 'entities', 'bosses', 'bosses2', 'bosses3', 'rooms', 'rooms2', 'rooms3', 'game'];
 
 function load() {
   const ctx = { console };
@@ -39,6 +39,10 @@ class Runner {
       changeRoom(dir) {
         self.exits.push({ dir, t: self.W.time });
         self.exited = dir;
+      },
+      warp(id) {
+        self.exits.push({ dir: 'warp', to: id, t: self.W.time });
+        self.exited = 'warp:' + id;
       },
     };
     const sp = opts.spawn;

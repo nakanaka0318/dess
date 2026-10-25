@@ -1239,11 +1239,12 @@
   R['8-B'] = {
     hint: '重力が反転したら天井に立つ。根っこの波は跳び、葉っぱの嵐は低い所で。幹の顔を撃とう。',
     area: 8,
-    name: 'ラスボス ニュートンの樹',
+    name: '3面ボス ニュートンの樹',
     theme: 'garden',
     bg: 'garden',
     music: null,
-    exits: { down: '8-3' },
+    exits: { down: '8-3', right: '9-1' },
+    edgeOk: ['right'], // 右の扉は3面クリア後に開く
     goal: 'boss',
     map: [
       '########################',
@@ -1266,6 +1267,24 @@
         for (let tx = 1; tx <= 3; tx++) for (let ty = 12; ty <= 13; ty++) W.setTile(tx, ty, 1);
         W.exits.down = null;
       };
+      // 3面クリア後：右の扉が開いて4面（月の裏側）へ
+      W.openNext = (fx) => {
+        for (let ty = 9; ty <= 11; ty++) W.setTile(23, ty, 0);
+        W.sign(21, 11, 'この先 月の裏側\n（STAGE 4）→', { range: 34 });
+        if (fx) {
+          W.burst(470, 200, 30, ['#7ad05a', '#ffe9a8', '#ffffff'], 2.5, { g: 0.15 });
+          G.sfx('crumble');
+        }
+      };
+      if (W.game && W.game.flags.treeDead) {
+        W.openNext(false);
+        W.save(5, 11);
+        W.decor(330, 200, 'stump');
+        W.text(240, 80, '切り株だけが残った', { size: 14, color: '#e8e2ff' });
+        // 倒した直後に落ちた場合は、ここでクリア扱いにする
+        if (!W.game.flags.stage3Clear) W.after(30, () => W.game.stageClear && W.game.stageClear());
+        return;
+      }
       G.BOSSES.tree(W, opts);
     },
   };

@@ -16,8 +16,14 @@ const EXTRA = { '4-2': ['--shoot', 'action'], '5-1': ['--shoot', 'action'], '8-1
 // ボス部屋は bosstest.js、3-4 は credits-test.js で検証
 const SKIP = { '2-B': true, '4-B': true, '3-4': true, '5-B': true, '6-B': true, '7-B': true, '8-B': true };
 
+// 4面：分かれ道の部屋はそれぞれの出口へ（謎解き部屋は stage4-test.js で検証）
+const CUSTOM = [
+  ['9-1', 'left', 'right'], ['9-1', 'S', 'right'],
+  ['9-H', 'left', 'right'], ['9-H', 'left', 'up'], ['9-H', 'left', 'down'], ['9-H', 'S', 'up'],
+  ['9-A3', 'S', 'right'],
+];
 function buildCases(G) {
-  const cases = [];
+  const cases = CUSTOM.filter((c) => G.ROOMS[c[0]]).slice();
   for (const ROUTE of ROUTES) ROUTE.forEach((id, i) => {
     if (SKIP[id]) return;
     const def = G.ROOMS[id];

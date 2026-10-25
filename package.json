@@ -4,7 +4,7 @@
   "private": true,
   "description": "スマホでも遊べるアイワナ系の死にゲー",
   "scripts": {
-    "test": "node tools/check.js && node tools/traps.js && node tools/human.js 1-1 1-2 1-3 1-4 2-1 2-2 2-3 3-1 3-2 3-3 4-2 4-3 && node tools/credits-test.js && node tools/bosstest.js",
+    "test": "node tools/check.js && node tools/traps.js && node tools/human.js 1-1 1-2 1-3 1-4 2-1 2-2 2-3 3-1 3-2 3-3 4-2 4-3 && node tools/stage4-test.js && node tools/credits-test.js && node tools/bosstest.js",
     "verify": "node tools/verify.js",
     "build": "node tools/build.js"
   }

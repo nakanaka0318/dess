@@ -7,7 +7,7 @@ G.autoShot = true;
 const args = process.argv.slice(2);
 const hazard = args.includes('--hazard');
 const rooms = args.filter((a) => !a.startsWith('--'));
-const targets = rooms.length ? rooms : ['2-B', '4-B', '5-B', '6-B', '7-B', '8-B'];
+const targets = rooms.length ? rooms : ['2-B', '4-B', '5-B', '6-B', '7-B', '8-B', '9-X'];
 const ENTRY = { '2-B': 'right', '5-B': 'left', '6-B': 'left', '7-B': 'left', '8-B': 'below' }; // 隣の部屋から入ってくる向き
 
 function run(id, seed) {
@@ -49,11 +49,11 @@ function run(id, seed) {
         if (b.cx + side * 150 < 30 || b.cx + side * 150 > 450) tx = b.cx - side * 150;
       } else if (id === '8-B') {
         tx = 220;
-      } else if (id === '5-B' || id === '6-B') {
+      } else if (id === '5-B' || id === '6-B' || id === '9-X') {
         // 距離を取って撃つ。床が危ない時（マグマ・地面を転がる太陽）は足場へ
         const lava = W.ents.some((e) => e.alive && e instanceof G.Lava);
         const low = b instanceof G.SunBoss && b.y + b.h > 200;
-        if (b instanceof G.SunBoss && !lava && !low) {
+        if ((b instanceof G.SunBoss || b instanceof G.SaveBoss) && !lava && !low) {
           // 太陽に近い方の足場の上から撃つ
           platform = b.cx < 240 ? 100 : 380;
           tx = platform;
@@ -103,7 +103,7 @@ function run(id, seed) {
   }
   // 撃破後の演出が終わって先へ進めるか（中ボスは出口が開く、ボスはステージクリア）
   const defeated = !!(W.boss && W.boss.defeated);
-  if (defeated) for (let k = 0; k < 1200 && !cleared; k++) r.step({ right: k % 120 < 60, left: k % 120 >= 60 });
+  if (defeated) for (let k = 0; k < 2400 && !cleared; k++) r.step({ right: k % 120 < 60, left: k % 120 >= 60 });
   return { t, defeated, cleared, hp: W.boss && W.boss.hp, hits, hitLog };
 }
 

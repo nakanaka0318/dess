@@ -91,7 +91,10 @@ for (const id of ids) {
           continue;
         }
         const P = W.player;
-        if (P.x !== Math.round(x) || P.y !== Math.round(y)) pushed++;
+        if (P.x !== Math.round(x) || P.y !== Math.round(y)) {
+          pushed++;
+          if (process.env.PUSHLOG) console.log(`[push] ${id} -${dir}-> ${to}`);
+        }
         if (W.solidAt(P.x, P.y, P.w, P.h)) {
           bad++;
           if (bad < 10) console.log(`[NG] ${id} -${dir}-> ${to}: (${x},${y}) で埋まる`);

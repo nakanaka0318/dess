@@ -193,7 +193,7 @@ function alarm(W) {
   }
   return a;
 }
-function run(id, script, rng) {
+function run(id, script, rng, onEnd) {
   const from = script.from || 'S';
   let opts;
   if (script.enter) opts = { enter: Object.assign({ vy: 0, djump: true, face: 1 }, script.enter) };
@@ -266,6 +266,7 @@ function run(id, script, rng) {
   // 最後に出口方向へ少し進めてみる
   for (let i = 0; i < 120 && !r.deaths.length && !r.exited; i++) r.step({});
   const goal = script.goal || 'right';
+  if (onEnd) onEnd(W);
   return { ok: r.exited === goal, death: r.deaths[0] && r.deaths[0].cause, exit: r.exited, pos: [W.player.x, W.player.y] };
 }
 
