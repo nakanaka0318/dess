@@ -7,12 +7,13 @@ G.autoShot = true;
 const args = process.argv.slice(2);
 const hazard = args.includes('--hazard');
 const rooms = args.filter((a) => !a.startsWith('--'));
-const targets = rooms.length ? rooms : ['2-B', '4-B', '5-B', '6-B', '7-B', '8-B', '9-X'];
+const targets = rooms.length ? rooms : ['2-B', '4-B', '5-B', '6-B', '7-B', '8-B', '9-X', '12-X'];
+const FLAGS = { '12-X': { culpritFound: true } }; // 推理の間は犯人を当てた後の対決から
 const ENTRY = { '2-B': 'right', '5-B': 'left', '6-B': 'left', '7-B': 'left', '8-B': 'below' }; // 隣の部屋から入ってくる向き
 
 function run(id, seed) {
   G.god = !hazard;
-  const flags = {};
+  const flags = Object.assign({}, FLAGS[id]);
   const r = new Runner(G, id, { spawn: ENTRY[id] ? { x: ENTRY[id] === 'below' ? 100 : 30, y: 226, face: 1 } : spawnAt(G, id, 'S'), flags, respawn: false });
   if (ENTRY[id] === 'right') {
     // 右隣の部屋から入ってくる想定

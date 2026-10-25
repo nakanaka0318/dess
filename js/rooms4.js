@@ -213,6 +213,17 @@
       const sun = W.add(new G.Moon(W, 150, 70, { r: 14, hazard: false, keep: true, face: 'calm' }));
       sun.sunny = true;
       W.text(240, 40, 'てっぺん', { size: 16, color: '#ffe9a8' });
+      // 5面クリア後：てっぺんの先、宇宙への扉が開く（6面へ）
+      W.openNext = (fx) => {
+        W.inputLock = 0;
+        W.door(3, 11, { to: '11-1', spawn: [2, 11], label: '宇' });
+        W.sign(5, 12, '宇宙への扉\n（STAGE 6）', { range: 30 });
+        if (fx) W.after(30, () => W.say('……あれ？ あんな所に扉が。\nぼくも一緒に行くよ。', 90, 96, 150, {}));
+      };
+      if (W.game && W.game.flags.stage5Clear) {
+        W.openNext(false);
+        return;
+      }
       W.trigPx(330, 0, 100, 280, () => {
         W.run(function* () {
           const P = W.player;
@@ -234,10 +245,7 @@
           G.sfx('fanfare');
           yield 120;
           W.vars.goal = true;
-          if (W.game) {
-            W.game.endingNote = '最後の死因：なし。てっぺんでリンゴが頭に当たっただけ。';
-            if (W.game.stageClear) W.game.stageClear();
-          }
+          if (W.game && W.game.stageClear) W.game.stageClear();
         });
       }, { cond: (P) => P.onGround });
     },

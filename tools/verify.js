@@ -24,6 +24,9 @@ const CUSTOM = [
   // 5面：塔の各画面を入口（E）から上へ（画面のつなぎ目は tower-test.js で検証）
   ['10-1', '@', 'up'], ['10-2', 'E', 'up'], ['10-3', 'E', 'up'], ['10-4', 'E', 'up'], ['10-5', 'E', 'up', ['--max', '80000']],
   ['10-6', 'E', 'up'], ['10-7', 'E', 'up'], ['10-8', 'E', 'up'],
+  // 6面（12-1 のエレベーターは human.js、推理の間は stage6-test.js と bosstest.js で検証）
+  ['11-1', 'S', 'right', ['--shoot', 'action']], ['11-2', 'S', 'right', ['--max', '12000']], ['11-3', 'S', 'right'], ['11-4', 'S', 'right'],
+  ['12-2', 'S', 'right', ['--shoot', 'action']], ['12-3', 'S', 'right'],
 ];
 function buildCases(G) {
   const cases = CUSTOM.filter((c) => G.ROOMS[c[0]]).slice();

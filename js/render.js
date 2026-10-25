@@ -932,7 +932,7 @@
   // ---------------- 主人公・弾 ----------------
   function drawPlayer(ctx, W) {
     const P = W.player;
-    if (!P.alive) return;
+    if (!P.alive || W.hidePlayer > 0) return;
     let frame;
     const g = W.gravity;
     if (!P.onGround) frame = P.vy * g < 0 ? 'jump' : 'fall';

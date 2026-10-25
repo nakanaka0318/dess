@@ -102,7 +102,7 @@ for (let k = 1; k <= 8; k++) {
   let cleared = false;
   r.game.stageClear = () => (cleared = true);
   for (let i = 0; i < 900 && !cleared && !r.deaths.length; i++) r.step({ right: r.W.player.cx < 350 });
-  ok(cleared && !r.deaths.length && /リンゴ/.test(r.game.endingNote || ''), `10-T: クリア (${r.game.endingNote})`);
+  ok(cleared && !r.deaths.length, '10-T: リンゴが当たってクリア');
 }
 
 // 5) 近道の扉はふもとへ

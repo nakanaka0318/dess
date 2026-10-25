@@ -11,6 +11,12 @@ const ids = args.filter((a) => !a.startsWith('--'));
 
 function hazardsAt(W, t) {
   const out = [];
+  // 月のウソの予告：予告された場所の外側がすべて危ない
+  const fw = W.vars.fakeWarn;
+  if (fw) {
+    out.push({ c: false, x: -20, y: 0, w: fw.x + 20, h: 240 });
+    out.push({ c: false, x: fw.x + fw.w, y: 0, w: 500, h: 240 });
+  }
   for (const e of W.ents) {
     if (!e.alive) continue;
     if (e instanceof G.Fruit && e.hazard) {
@@ -83,7 +89,8 @@ function hit(p, h, m) {
 
 function fight(id) {
   const ENTRY = { '5-B': 30, '6-B': 30, '7-B': 30, '8-B': 100 };
-  const r = new Runner(G, id, { spawn: ENTRY[id] ? { x: ENTRY[id], y: 226, face: 1 } : spawnAt(G, id, id === '2-B' ? '@' : 'S'), diff: easy ? 'easy' : 'normal' });
+  const FLAGS = { '12-X': { culpritFound: true } };
+  const r = new Runner(G, id, { spawn: ENTRY[id] ? { x: ENTRY[id], y: 226, face: 1 } : spawnAt(G, id, id === '2-B' ? '@' : 'S'), diff: easy ? 'easy' : 'normal', flags: Object.assign({}, FLAGS[id]) });
   const W = r.W;
   if (id === '2-B') {
     W.player.x = 440;

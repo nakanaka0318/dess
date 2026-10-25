@@ -255,6 +255,54 @@
         { inst: 'drum', vol: 0.09, seq: '(k - h - s - h - k - h k s - h -)*8' },
       ],
     },
+    // 6面：嘘つき銀河（ふわふわして信用できない）
+    galaxy: {
+      bpm: 108,
+      ch: [
+        {
+          inst: 'sq25', vol: 0.05,
+          seq: `E5 . . G5 . . B5 . A5 . . . G5 . E5 . | F5 . . A5 . . C6 . B5 . . . A5 . . . |
+                E5 . . G5 . . B5 . D6 . . . C6 . B5 . | A5 . . . G#5 . . . A5 . . . . . . . |
+                C6 . . B5 . . A5 . G5 . . . E5 . . . | F5 . . E5 . . D5 . E5 . . . . . . . |
+                E5 . . G5 . . B5 . E6 . . . D6 . C6 . | B5 . . . A5 . . . G#5 . . . . . . .`,
+        },
+        { inst: 'sq12', vol: 0.035, seq: arp(['Em', 'F', 'Em', 'Am', 'C', 'Dm', 'Em', 'E'], [0, 2, 1, 2, 0, 2, 1, 2], 1) },
+        { inst: 'tri', vol: 0.15, seq: bass(['Em', 'F', 'Em', 'Am', 'C', 'Dm', 'Em', 'E'], 'R . . R . . H . R . . R . . H .', -1) },
+        { inst: 'drum', vol: 0.08, seq: '(k - - h s - h - k - k h s - h -)*8' },
+      ],
+    },
+    // 6面：宇宙ステーション（推理もの）
+    mystery: {
+      bpm: 126,
+      ch: [
+        {
+          inst: 'sq50', vol: 0.045,
+          seq: `D5 . F5 . A5 . . . G#5 . . . A5 . . . | D5 . F5 . A5 . D6 . C6 . A5 . . . . . |
+                Bb4 . D5 . F5 . . . E5 . . . F5 . . . | C#5 . E5 . A5 . . . G5 . F5 . E5 . . . |
+                D5 . F5 . A5 . . . G#5 . . . A5 . . . | D6 . . . C6 . Bb5 . A5 . G5 . F5 . . . |
+                G5 . . . F5 . E5 . D5 . . . E5 . F5 . | E5 . . . . . . . A4 . . . . . . .`,
+        },
+        { inst: 'sq12', vol: 0.03, seq: arp(['Dm', 'Dm', 'Bb', 'A', 'Dm', 'Gm', 'Gm', 'A'], [0, 1, 2, 1], 0) },
+        { inst: 'tri', vol: 0.16, seq: bass(['Dm', 'Dm', 'Bb', 'A', 'Dm', 'Gm', 'Gm', 'A'], 'R . R . . . R . R . R . . . H .', -1) },
+        { inst: 'drum', vol: 0.09, seq: '(k - h - s - h h k - h - s - h -)*8' },
+      ],
+    },
+    // 6面ボス：THE TRUE MOON
+    truemoon: {
+      bpm: 190,
+      ch: [
+        {
+          inst: 'sq25', vol: 0.08,
+          seq: `E6 . D6 . B5 . G5 . A5 . B5 . D6 . E6 . | F6 . E6 . C6 . A5 . B5 . . . . . . . |
+                E6 . D6 . B5 . G5 . A5 . B5 . D6 . G6 . | F#6 . . . D#6 . . . B5 . . . . . . . |
+                C6 . E6 . G6 . . . F6 . E6 . D6 . C6 . | B5 . D6 . F6 . . . E6 . D6 . C6 . B5 . |
+                A5 . C6 . E6 . A6 . G6 . F6 . E6 . D6 . | E6 . . . . . . . B5 . . . E6 . . .`,
+        },
+        { inst: 'sq12', vol: 0.045, seq: arp(['Em', 'F', 'Em', 'B', 'C', 'G', 'Am', 'B'], [0, 1, 2, 3], 1) },
+        { inst: 'tri', vol: 0.2, seq: bass(['Em', 'F', 'Em', 'B', 'C', 'G', 'Am', 'B'], 'R H R H R H R H R H R H R H R H', -1) },
+        { inst: 'drum', vol: 0.17, seq: '(k h s h k k s h k h s k k k s s)*8' },
+      ],
+    },
     ending: {
       bpm: 96,
       ch: [

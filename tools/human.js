@@ -151,6 +151,69 @@ const S = {
     ],
     goal: 'up',
   },
+  // 6面
+  '11-1': {
+    from: 'S',
+    steps: [
+      { go: 100 }, { shoot: 4 }, // ★1UP（機雷）は撃って消す
+      { go: 352 }, { until: (W) => !W.vars.ov || W.vars.ov.t >= W.vars.ov.reveal, dir: 0 }, // にせの GAME OVER の間は跳ばない（押すとリトライ扱い）
+      { jump: 'R', hold: 12 }, { jump: 'R', hold: 14 }, // 偽の床を越え、着地したらすぐ出口のトゲを越える
+    ],
+  },
+  '11-2': {
+    from: 'S',
+    steps: [
+      { go: 90 }, { until: (W, P) => W.ents.some((e) => e.alive && e.kind === 'rock' && e.x < P.x + 46), dir: 0 }, { jump: 0, hold: 14 }, // 右からの隕石
+      { go: 172 }, { jump: 'R', hold: 16 }, // UFO の下は跳び越える
+      { go: 266 }, { jump: 'R', hold: 16, dj: 22, djHold: 14 }, // 高い足場へ（低い足場は偽物）
+      { jump: 'R', hold: 8 }, { go: 428 }, { jump: 'R', hold: 12 }, // すぐ降りて、ワープゾーンを跳び越える
+    ],
+  },
+  '11-3': {
+    from: 'S',
+    steps: [
+      { go: 104 }, { go: 80 }, { wait: 150 }, // 惑星を落とさせて、帰るのを待つ
+      { go: 356 }, // にせの PAUSE でも止まらない。壁はそのまま通れる
+      { jump: 'R', hold: 16 }, { go: 500 }, // 倒れる看板を跳び越える
+    ],
+  },
+  '11-4': {
+    from: 'S',
+    steps: [
+      { go: 88 },
+      { until: (W) => W.ents.some((e) => e.alive && e.style === 'ring' && e.y === 200 && e.x < 114), dir: 0 }, { jump: 'R', hold: 16, steerFrames: 22 }, // 環Aが左に来たら乗る
+      { until: (W) => W.ents.some((e) => e.alive && e.style === 'ring' && e.y === 200 && e.x > 188), dir: 0 }, { jump: 'R', hold: 16, steerFrames: 34 }, // 右端で環Bへ
+      { until: (W) => W.ents.some((e) => e.alive && e.style === 'ring' && e.y === 160 && e.x > 312), dir: 'R' }, { jump: 'R', hold: 14 }, // 向こう岸の左のはしを避けて
+      { go: 500 }, // 本物の1UPは撃たずに取る
+    ],
+  },
+  '12-1': {
+    from: 'S',
+    steps: [
+      { go: 70 }, { shoot: 30 }, { wait: 10 }, // 掃除ロボットは撃って壊す（セーブポイントの上で撃つと弾がセーブに当たる）
+      { go: 244 }, { jump: 'R', hold: 10, steerFrames: 14 }, // エレベーターに乗る
+      { go: 306 }, { until: (W, P) => P.y + P.h <= 140, dir: 0 }, { jump: 'R', hold: 16 }, // 通路の高さで跳び移る
+      { go: 392 }, { wait: 6 }, { jump: 'R', hold: 16 }, { go: 500 }, // レーザーを跳んでよけて出口へ
+    ],
+  },
+  '12-2': {
+    from: 'S',
+    steps: [
+      { go: 92 }, { until: (W, P) => P.onGround && P.y > 200, dir: 0 }, { shoot: 10 }, { wait: 10 }, // もう一人の自分を撃つ
+      { go: 176 }, { jump: 'R', hold: 12 }, // にせの STAGE CLEAR が出たら足場へ
+      { go: 268 }, { jump: 'R', hold: 14 }, // 抜けた床を越える
+      { go: 400 }, { jump: 'R', hold: 14 }, { go: 500 }, // 宇宙人の言うとおり、トゲを越える
+    ],
+  },
+  '12-3': {
+    from: 'S',
+    steps: [
+      { go: 70 }, { until: (W) => W.vars.count === null, dir: 0 }, // 自爆カウントダウンが終わるまで待つ
+      { go: 274 }, { jump: 'R', hold: 16 }, // 抜けた床を越える
+      { go: 350 }, { wait: 100 }, // 停電させて、その間は動かない
+      { go: 408 }, { go: 380 }, { wait: 40 }, { jump: 'R', hold: 16 }, { go: 500 }, // 天井を落とさせてから越える
+    ],
+  },
 };
 
 // 星の軌道を少し先まで予測して、当たらない向き（進む・止まる・戻る）を選ぶ
