@@ -561,6 +561,30 @@
       '########################',
     ],
     setup(W, opts) {
+      // 4面クリア後：月がおわびに「天への扉」を開けてくれる（5面へ）
+      W.openNext = (fx) => {
+        const P = W.player;
+        if (!P.alive) {
+          P.alive = true;
+          P.x = 100;
+          P.y = 226;
+          P.vy = 0;
+        }
+        let moon = W.ents.find((e) => e instanceof G.Moon && e.alive);
+        if (!moon) moon = W.add(new G.Moon(W, 300, 150, { r: 14, hazard: false, keep: true, face: 'calm' }));
+        moon.hazard = false;
+        moon.stop();
+        moon.x = 300 - moon.r;
+        moon.y = 130 - moon.r;
+        moon.face = 'calm';
+        W.door(20, 10, { to: '10-1', spawn: [3, 11], label: '天' });
+        W.sign(18, 11, '天への扉\n（STAGE 5）', { range: 30 });
+        if (fx) W.after(30, () => W.say('おわびに、天まで続く塔への\n扉を開けておいたよ。', moon.cx, moon.y - 6, 150, {}));
+      };
+      if (W.game && W.game.flags.stage4Clear) {
+        W.openNext(false);
+        return;
+      }
       if (W.game && W.game.flags.saveBossDead) {
         W.run(function* () {
           yield 30;

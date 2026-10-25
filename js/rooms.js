@@ -14,6 +14,7 @@
     2: { title: 'STAGE 2', name: '太陽を沈めろ', start: '5-1', story: ['月が消えて、太陽が怒った。', '月の部屋の右の扉から、砂漠へ。'], clearFlags: { cactusDead: true, sunDead: true } },
     3: { title: 'STAGE 3', name: 'すべての元凶', start: '7-1', story: ['リンゴはなぜ落ちてくるのか。', '太陽の部屋の右の扉から、宇宙へ。'], clearFlags: { holeDead: true, treeDead: true } },
     4: { title: 'STAGE 4', name: '月の裏側', start: '9-1', story: ['本当にリンゴを落としていたのは誰？', 'ニュートンの樹の右の扉から、月の裏側へ。'], clearFlags: { saveBossDead: true } },
+    5: { title: 'STAGE 5', name: '天まで届け', start: '10-1', story: ['月がおわびに開けてくれた扉の先は、', '天まで続く塔だった。落ちたら、そこからやり直し。'] },
   };
   G.AREAS = {
     1: { stage: 1, title: 'AREA 1  はじまりの草原', sub: '〜 リンゴは上にも落ちる 〜', music: 'grass' },
@@ -25,6 +26,7 @@
     7: { stage: 3, title: 'AREA 7  さかさまの宇宙', sub: '〜 上も下もない 〜', music: 'void' },
     8: { stage: 3, title: 'AREA 8  ニュートンの庭', sub: '〜 すべてのリンゴはここから落ちる 〜', music: 'garden' },
     9: { stage: 4, title: 'AREA 9  月の裏側', sub: '〜 真実は裏側にある 〜', music: 'farside' },
+    10: { stage: 5, title: 'AREA 10  天まで届け', sub: '〜 落ちたら、そこからやり直し 〜', music: 'tower' },
   };
   const R = (G.ROOMS = {});
 

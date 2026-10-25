@@ -64,7 +64,7 @@ class Heap {
 
 function makeStart(G, o) {
   const id = o.room;
-  if (o.from === 'S' || o.from === '@' || o.from === 's') return { spawn: spawnAt(G, id, o.from), respawn: o.from !== '@' };
+  if (o.from.length === 1) return { spawn: spawnAt(G, id, o.from), respawn: o.from !== '@' };
   // 隣の部屋から入ってくる：境界上の開いている位置を探す
   const def = G.ROOMS[id];
   const T = G.T;

@@ -21,6 +21,9 @@ const CUSTOM = [
   ['9-1', 'left', 'right'], ['9-1', 'S', 'right'],
   ['9-H', 'left', 'right'], ['9-H', 'left', 'up'], ['9-H', 'left', 'down'], ['9-H', 'S', 'up'],
   ['9-A3', 'S', 'right'],
+  // 5面：塔の各画面を入口（E）から上へ（画面のつなぎ目は tower-test.js で検証）
+  ['10-1', '@', 'up'], ['10-2', 'E', 'up'], ['10-3', 'E', 'up'], ['10-4', 'E', 'up'], ['10-5', 'E', 'up', ['--max', '80000']],
+  ['10-6', 'E', 'up'], ['10-7', 'E', 'up'], ['10-8', 'E', 'up'],
 ];
 function buildCases(G) {
   const cases = CUSTOM.filter((c) => G.ROOMS[c[0]]).slice();

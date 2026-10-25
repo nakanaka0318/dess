@@ -1135,4 +1135,66 @@
       ctx.fillRect(x, y + ((b.glitch * 7) % b.h), b.w, 3);
     }
   };
+
+  // =====================================================================
+  // 5面：天まで届け
+  // =====================================================================
+  // 高さメーター（右端の縦棒に、いまの高さと最高記録）
+  R.drawHeight = function (ctx, W) {
+    const P = W.player,
+      k = W.vars.tower || 1;
+    const h = Math.max(0, Math.round(((k - 1) * SH + (SH - (P.y + P.h))) / 10));
+    const max = Math.max(h, (W.game && W.game.flags && W.game.flags.towerMax) || 0);
+    const top = 9 * 28;
+    const bx = SW - 12,
+      by = 24,
+      bh = 120;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(bx - 1, by - 1, 6, bh + 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillRect(bx, by, 4, bh);
+    const yOf = (v) => Math.round(by + bh - (Math.min(v, top) / top) * bh);
+    ctx.fillStyle = '#ffd770';
+    ctx.fillRect(bx - 3, yOf(max), 10, 1);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(bx - 1, yOf(h) - 1, 6, 3);
+    ctx.font = '8px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillText(`${h}m`, bx - 3, yOf(h) + 4);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`${h}m`, bx - 4, yOf(h) + 3);
+    ctx.fillStyle = '#ffd770';
+    ctx.fillText('天', bx + 5, by - 4);
+    ctx.textAlign = 'left';
+  };
+  // 塔の風（白い筋）
+  R.drawTowerWind = function (ctx, W) {
+    const t = W.time;
+    const gust = W.windX < 0;
+    const n = W.vars.windWarn ? 10 : gust ? 50 : 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    for (let i = 0; i < n; i++) {
+      const sp = gust ? 7 + hash2(i, 3, 12) * 4 : 2;
+      const x = SW - ((hash2(i, 1, 12) * SW + t * sp) % (SW + 40));
+      const y = hash2(i, 2, 12) * SH;
+      ctx.fillRect(Math.round(x), Math.round(y), gust ? 10 : 4, 1);
+    }
+  };
+  Object.assign(G.DECOR, {
+    // 壺（とハンマー）
+    pot(ctx, d, x, y) {
+      ctx.fillStyle = '#5a3a20';
+      ctx.fillRect(x + 2, y + 6, 20, 18);
+      ctx.fillRect(x, y + 10, 24, 10);
+      ctx.fillStyle = '#7a5230';
+      ctx.fillRect(x + 4, y + 8, 6, 12);
+      ctx.fillStyle = '#3a2410';
+      ctx.fillRect(x + 4, y + 4, 16, 3);
+      ctx.fillStyle = '#9a9aa8';
+      ctx.fillRect(x + 20, y - 14, 2, 22);
+      ctx.fillStyle = '#c8c8d4';
+      ctx.fillRect(x + 16, y - 18, 10, 5);
+    },
+  });
 })();

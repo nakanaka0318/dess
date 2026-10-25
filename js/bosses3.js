@@ -274,7 +274,6 @@
     W.say('ゴメン', moon.cx, moon.y - 8, 90, {});
     yield 100;
     if (W.game) {
-      W.game.endingNote = '最後の死因：月がうっかり落ちてきた。（いつものこと）';
       if (W.game.stageClear) W.game.stageClear();
     }
   };

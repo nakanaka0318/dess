@@ -239,6 +239,22 @@
         { inst: 'drum', vol: 0.07, seq: '(k - - - - - - - s - - - - - - -)*8' },
       ],
     },
+    // 5面：天まで届け（のぼっていく旋律）
+    tower: {
+      bpm: 120,
+      ch: [
+        {
+          inst: 'sq25', vol: 0.06,
+          seq: `C5 . E5 . G5 . C6 . . . B5 . G5 . . . | A5 . C6 . E6 . . . D6 . C6 . A5 . . . |
+                F5 . A5 . C6 . F6 . . . E6 . C6 . . . | G5 . B5 . D6 . G6 . . . . . . . . . |
+                C6 . E6 . G6 . . . F6 . E6 . D6 . . . | A5 . C6 . F6 . . . E6 . D6 . C6 . . . |
+                D6 . F6 . A6 . . . G6 . F6 . E6 . D6 . | C6 . . . G5 . . . C6 . . . . . . .`,
+        },
+        { inst: 'sq12', vol: 0.035, seq: arp(['C', 'Am', 'F', 'G', 'C', 'F', 'Dm', 'C'], [0, 1, 2, 3], 1) },
+        { inst: 'tri', vol: 0.16, seq: bass(['C', 'Am', 'F', 'G', 'C', 'F', 'Dm', 'C'], 'R . H . R . H . R . H . R . H .', -1) },
+        { inst: 'drum', vol: 0.09, seq: '(k - h - s - h - k - h k s - h -)*8' },
+      ],
+    },
     ending: {
       bpm: 96,
       ch: [
