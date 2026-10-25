@@ -41,7 +41,7 @@ const NAIVE = [
   { id: '4-2', name: '扉の先の落とし穴', base: '4-2', cutStep: { go: 418 }, expect: /落とし穴/ },
   { id: '4-3', name: '月のおかわり', base: '4-3', replaceWait: { from: 90, to: 40 }, expect: /おかわり|贈り物/ },
   // 2面
-  { id: '5-1', name: 'だるまサボテン', from: '@', steps: [{ go: 124 }, { jump: 'R', hold: 14 }, { go: 196 }, { jump: 'R', hold: 14 }, { go: 500 }], expect: /だるまさん/ },
+  { id: '5-1', name: 'だるまサボテン', from: '@', steps: [{ go: 124 }, { jump: 'R', hold: 14 }, { go: 196 }, { jump: 'R', hold: 14 }, { go: 500 }], expect: /だるまさん|ハゲワシ/ },
   { id: '5-1', name: '砂の柱', enter: { x: 310, y: 226 }, steps: [{ go: 352 }, { jump: 'R', hold: 12 }, { go: 500 }], expect: /砂の中/ },
   { id: '5-1', name: '先回りの日差し', enter: { x: 410, y: 226 }, steps: [{ go: 500 }], expect: /先回り/ },
   { id: '5-2', name: '砂嵐', from: 'S', steps: [{ wait: 100 }, { go: 74 }, { jump: 'R', hold: 16 }, { go: 500 }], expect: /砂嵐/ },
@@ -53,6 +53,11 @@ const NAIVE = [
   { id: '6-1', name: 'フェイントの炎', enter: { x: 300, y: 226 }, steps: [{ go: 500 }], expect: /フェイント/ },
   { id: '6-2', name: '出口のトゲ', enter: { x: 236, y: 66 }, steps: [{ jump: 0, hold: 16, dj: 18, djHold: 14 }, { wait: 30 }], goal: 'up', expect: /出口にも/ },
   { id: '6-3', name: '落ちる天井', from: 'S', steps: [{ go: 500 }], expect: /天井/ },
+  { id: '5-1', name: 'ハゲワシ', enter: { x: 96, y: 226 }, steps: [{ go: 108 }, { wait: 150 }], expect: /ハゲワシ/ },
+  { id: '5-2', name: '砂の中のヘビ', enter: { x: 150, y: 226 }, steps: [{ go: 236 }], expect: /ヘビ/ },
+  { id: '5-3', name: '出口の大岩', enter: { x: 420, y: 226 }, steps: [{ go: 500 }], expect: /大岩/ },
+  { id: '6-1', name: '太陽の目の真下', enter: { x: 226, y: 226 }, steps: [{ go: 240 }, { wait: 60 }], expect: /太陽の目/ },
+  { id: '6-3', name: '燃える看板', enter: { x: 150, y: 226 }, steps: [{ go: 190 }, { wait: 90 }], expect: /看板が燃えた/ },
   // 3面
   { id: '7-1', name: '重力が戻る', from: 'S', steps: [{ go: 92 }, { jump: 'R', hold: 12 }, { go: 500 }], expect: /重力が急に/ },
   { id: '7-1', name: 'スペースデブリ', enter: { x: 384, y: 226 }, steps: [{ go: 500 }], expect: /デブリ/ },

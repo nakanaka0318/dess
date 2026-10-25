@@ -28,7 +28,7 @@
   // ------------------------------------------------------------------
   class CactusBoss extends G.Boss {
     constructor(W, cx) {
-      super(W, cx - 18, FLOOR - 76, 36, 76, { hp: 70, name: 'サボテン将軍' });
+      super(W, cx - 18, FLOOR - 76, 36, 76, { hp: 90, name: 'サボテン将軍' });
       this.scale = 0.3;
       this.cause = 'サボテン将軍にハグされた。';
       this.arm = 0; // 腕の上げ具合（-1 下 / 1 上）
@@ -71,13 +71,15 @@
       c.arm = 1;
       G.sfx('charge');
       yield 26;
-      const n = phase2() ? 11 : 8;
-      for (let i = 0; i < n; i++) {
-        const vx = -2.6 + (5.2 * i) / (n - 1) + rng.range(-0.25, 0.25);
-        needle(c.cx, c.y + 6, vx, -5.2 - rng.range(0, 1), 0.15, '針の雨に打たれた。');
+      const n = phase2() ? 16 : 12;
+      for (let w = 0; w < (phase2() ? 2 : 1); w++) {
+        for (let i = 0; i < n; i++) {
+          const vx = -2.8 + (5.6 * i) / (n - 1) + rng.range(-0.2, 0.2) + w * 0.18;
+          needle(c.cx, c.y + 6, vx, -5.2 - rng.range(0, 1), 0.15, '針の雨に打たれた。');
+        }
+        G.sfx('explode');
+        yield 26;
       }
-      G.sfx('explode');
-      yield 20;
       c.arm = 0;
       yield 60;
     }
@@ -90,7 +92,11 @@
         yield phase2() ? 22 : 28;
         const dir = P.cx < c.cx ? -1 : 1;
         const y = kind === 'low' ? FLOOR - 6 : FLOOR - 36;
-        for (let k = 0; k < 2; k++) needle(c.cx + dir * (20 + k * 10), y, dir * 3.6, 0, 0, kind === 'low' ? '足もとの針を跳べなかった。' : '高い針に跳びこんだ。');
+        for (let k = 0; k < 3; k++) needle(c.cx + dir * (20 + k * 10), y, dir * 4.2, 0, 0, kind === 'low' ? '足もとの針を跳べなかった。' : '高い針に跳びこんだ。');
+        // 反対側にも少し遅れて飛ばす
+        W.after(10, () => {
+          if (!c.defeated) for (let k = 0; k < 2; k++) needle(c.cx - dir * (20 + k * 10), y, -dir * 3.4, 0, 0, '背中側にも針は飛ぶ。');
+        });
         G.sfx('shoot');
         yield 34;
       }
@@ -123,6 +129,15 @@
       c.vel((tx - c.cx) / dur, -5.6, 0, 0.2);
       c.arm = 1;
       G.sfx('boing');
+      // 後半は空中から全方位に針をばらまく
+      if (phase2()) {
+        yield () => c.vy >= 0;
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * Math.PI * 2 + rng.range(0, 0.4);
+          needle(c.cx, c.y + 30, Math.cos(a) * 2.4, Math.sin(a) * 2.4, 0.04, '空からの針に刺さった。');
+        }
+        G.sfx('explode');
+      }
       yield () => c.vy > 0 && c.y + c.h >= FLOOR;
       c.stop();
       c.y = FLOOR - c.h;
@@ -141,12 +156,12 @@
     }
     // 頭の花が咲いて種をまき散らす（後半）
     function* bloom() {
-      for (let w = 0; w < 2; w++) {
+      for (let w = 0; w < 3; w++) {
         c.bloom = 1;
         G.sfx('charge');
-        yield 30;
-        const n = 12,
-          off = w * (Math.PI / 12) + rng.range(0, 0.3);
+        yield 26;
+        const n = 16,
+          off = w * (Math.PI / 16) + rng.range(0, 0.3);
         for (let i = 0; i < n; i++) {
           const a = off + (i / n) * Math.PI * 2;
           const s = W.fruit(c.cx, c.y + 4, { kind: 'seed', r: 4, cause: 'サボテンの花に見とれた。' });
@@ -157,6 +172,28 @@
         c.bloom = 0;
         yield 44;
       }
+    }
+
+    // 針の竜巻：体から渦を巻いて針が飛び出す
+    function* spin() {
+      c.arm = 1;
+      G.sfx('charge');
+      yield 24;
+      const arms = phase2() ? 3 : 2;
+      let a = rng.range(0, 6.28);
+      for (let t = 0; t < 130; t++) {
+        if (t % 6 === 0) {
+          for (let k = 0; k < arms; k++) {
+            const ang = a + (k / arms) * Math.PI * 2;
+            needle(c.cx, c.y + 30, Math.cos(ang) * 2, Math.sin(ang) * 2, 0, '針の竜巻に巻きこまれた。');
+          }
+          if (t % 18 === 0) G.sfx('shoot');
+        }
+        a += 0.08;
+        yield 1;
+      }
+      c.arm = 0;
+      yield 30;
     }
 
     W.run(function* () {
@@ -188,17 +225,18 @@
       if (W.easy) W.lives = 3;
       let last = '';
       for (;;) {
-        const pool = phase2() ? ['rain', 'volley', 'wave', 'leap', 'bloom'] : ['rain', 'volley', 'wave', 'leap'];
+        const pool = phase2() ? ['rain', 'volley', 'wave', 'leap', 'bloom', 'spin'] : ['rain', 'volley', 'wave', 'leap', 'spin'];
         let p;
         do p = rng.pick(pool);
         while (p === last);
         last = p;
-        if (p === 'rain') yield* rain();
+        if (p === 'spin') yield* spin();
+        else if (p === 'rain') yield* rain();
         else if (p === 'volley') yield* volley();
         else if (p === 'wave') yield* wave();
         else if (p === 'leap') yield* leap();
         else yield* bloom();
-        yield phase2() ? 16 : 26;
+        yield phase2() ? 10 : 18;
       }
     }, c.ai);
 
@@ -255,7 +293,7 @@
   // ------------------------------------------------------------------
   class SunBoss extends G.Boss {
     constructor(W, cx, cy) {
-      super(W, cx - 38, cy - 38, 76, 76, { hp: 180, name: 'THE SUN' });
+      super(W, cx - 38, cy - 38, 76, 76, { hp: 200, name: 'THE SUN' });
       this.r = 38;
       this.face = 'grin';
       this.cause = '太陽に触れてしまった。熱い。';
@@ -302,9 +340,9 @@
       s.face = 'angry';
       G.sfx('charge');
       yield 24;
-      const n = phase() === 1 ? 2 : 3;
+      const n = [3, 4, 5][phase() - 1];
       for (let i = 0; i < n; i++) {
-        const tx = G.clamp(P.cx + (i - (n - 1) / 2) * 70 + rng.range(-12, 12), 20, 460);
+        const tx = G.clamp(P.cx + (i - (n - 1) / 2) * 60 + rng.range(-12, 12), 20, 460);
         const T = 48;
         const f = fire(s.cx, s.cy + 20, 9, 'フレアの直撃を受けた。');
         const g = 0.16;
@@ -314,8 +352,8 @@
             this.alive = false;
             G.sfx('explode');
             W.burst(this.cx, FLOOR, 10, ['#ff7a20', '#ffd84a'], 2, { up: 1.5, g: 0.15, life: 20 });
-            for (let k = 0; k < 5; k++) {
-              const a = -Math.PI * (0.15 + (0.7 * k) / 4);
+            for (let k = 0; k < 7; k++) {
+              const a = -Math.PI * (0.12 + (0.76 * k) / 6);
               const b = fire(this.cx, FLOOR - 10, 4, '弾けたフレアに焼かれた。');
               b.vel(Math.cos(a) * 2.1, Math.sin(a) * 2.6, 0, 0.12);
             }
@@ -346,12 +384,12 @@
     // コロナ：火の輪が広がる（輪ごとに隙間の位置がずれる）
     function* corona() {
       yield* goTo(240, HOMEY, 30);
-      const rings = phase() === 3 ? 4 : 3;
+      const rings = phase() === 3 ? 5 : 4;
       for (let w = 0; w < rings; w++) {
         s.face = 'rage';
         G.sfx('charge');
-        yield 22;
-        const n = 14,
+        yield 20;
+        const n = 18,
           off = (w % 2) * (Math.PI / n);
         for (let i = 0; i < n; i++) {
           const a = off + (i / n) * Math.PI * 2;
@@ -360,6 +398,50 @@
         }
         G.sfx('explode');
         yield 34;
+      }
+      s.face = 'grin';
+      yield 30;
+    }
+    // 太陽の渦：何本もの腕が回転しながら火の玉をまき散らす
+    function* spiral() {
+      yield* goTo(240, HOMEY - 6, 30);
+      s.face = 'rage';
+      G.sfx('roar');
+      yield 26;
+      const arms = phase() === 3 ? 5 : 4;
+      const dirSpin = rng.chance(0.5) ? 1 : -1;
+      let a = rng.range(0, 6.28);
+      for (let t = 0; t < 160; t++) {
+        if (t % 6 === 0) {
+          for (let k = 0; k < arms; k++) {
+            const ang = a + (k / arms) * Math.PI * 2;
+            const f = fire(s.cx + Math.cos(ang) * 30, s.cy + Math.sin(ang) * 30, 4, '太陽の渦に巻きこまれた。');
+            f.vel(Math.cos(ang) * 1.8, Math.sin(ang) * 1.8);
+          }
+          if (t % 18 === 0) G.sfx('shoot');
+        }
+        a += 0.075 * dirSpin;
+        yield 1;
+      }
+      s.face = 'grin';
+      yield 30;
+    }
+    // 太陽風：こちらを狙った扇状の火の玉を連射
+    function* wind() {
+      s.face = 'angry';
+      G.sfx('charge');
+      yield 20;
+      const volleys = phase() === 3 ? 7 : 5;
+      for (let v = 0; v < volleys; v++) {
+        const a0 = Math.atan2(P.cy - s.cy, P.cx - s.cx);
+        const n = v % 2 ? 6 : 7;
+        for (let i = 0; i < n; i++) {
+          const a = a0 + (i - (n - 1) / 2) * 0.2;
+          const f = fire(s.cx + Math.cos(a) * 34, s.cy + Math.sin(a) * 34, 4, '太陽風に吹き飛ばされた。');
+          f.vel(Math.cos(a) * 2.6, Math.sin(a) * 2.6);
+        }
+        G.sfx('shoot');
+        yield 20;
       }
       s.face = 'grin';
       yield 30;
@@ -376,13 +458,13 @@
         lava.y = 300 - (i / 80) * 88; // 212 まで
         yield 1;
       }
-      for (let k = 0; k < (phase() === 3 ? 4 : 3); k++) {
-        yield 30;
-        const dx = P.cx - s.cx,
-          dy = P.cy - s.cy;
-        const d = Math.hypot(dx, dy) || 1;
-        const f = fire(s.cx, s.cy, 6, '狙い撃ちの火球に焼かれた。');
-        f.vel((dx / d) * 3.2, (dy / d) * 3.2);
+      for (let k = 0; k < (phase() === 3 ? 5 : 4); k++) {
+        yield 26;
+        const a0 = Math.atan2(P.cy - s.cy, P.cx - s.cx);
+        for (const da of [-0.22, 0, 0.22]) {
+          const f = fire(s.cx, s.cy, 5, '狙い撃ちの火球に焼かれた。');
+          f.vel(Math.cos(a0 + da) * 3, Math.sin(a0 + da) * 3);
+        }
         G.sfx('shoot');
       }
       yield 50;
@@ -402,6 +484,22 @@
         W.dark = (i / 20) * 0.6;
         yield 1;
       }
+      // 暗闇の中でゆっくり回る火の輪
+      W.run(function* () {
+        let a = 0;
+        for (let t = 0; t < 200 && s.dark && !s.defeated; t++) {
+          if (t % 20 === 0) {
+            for (let k = 0; k < 8; k++) {
+              const ang = a + (k / 8) * Math.PI * 2;
+              const f = fire(s.cx, s.cy, 4, '暗闇の火の輪にふれた。');
+              f.vel(Math.cos(ang) * 1.3, Math.sin(ang) * 1.3);
+              f.layer = 9;
+            }
+            a += 0.2;
+          }
+          yield 1;
+        }
+      });
       for (let k = 0; k < 5; k++) {
         G.sfx('warn');
         yield 26;
@@ -495,12 +593,14 @@
           yield* desperation();
           continue;
         }
-        const pool = ph === 1 ? ['flare', 'beam', 'corona'] : ph === 2 ? ['flare', 'beam', 'corona', 'heat'] : ['flare', 'beam', 'corona', 'heat', 'eclipse'];
+        const pool = ph === 1 ? ['flare', 'beam', 'corona', 'spiral'] : ph === 2 ? ['flare', 'beam', 'corona', 'heat', 'spiral', 'wind'] : ['flare', 'beam', 'corona', 'heat', 'eclipse', 'spiral', 'wind'];
         let p;
         do p = rng.pick(pool);
         while (p === last);
         last = p;
-        if (p === 'flare') yield* flare();
+        if (p === 'spiral') yield* spiral();
+        else if (p === 'wind') yield* wind();
+        else if (p === 'flare') yield* flare();
         else if (p === 'beam') yield* beam();
         else if (p === 'corona') yield* corona();
         else if (p === 'heat') yield* heat();

@@ -21,6 +21,15 @@ function hazardsAt(W, t) {
       const left = e.phase === 'warn' ? e.warn - e.t : 0;
       const end = e.warn + e.dur - e.t;
       if (t >= left - 2 && t <= end) out.push({ c: false, x: e.x, y: e.y, w: e.w, h: e.h });
+    } else if (e instanceof G.Spike && e.hazard) {
+      out.push({ c: false, x: e.x + e.ox + 3, y: e.y + e.oy + 3, w: e.w - 6, h: e.h - 6 });
+    } else if (e instanceof G.Lava) {
+      out.push({ c: false, x: 0, y: e.y + 4, w: 480, h: 400 });
+    } else if (e instanceof G.Moon && e.hazard) {
+      out.push({ c: true, x: e.cx + e.vx * t, y: e.cy + e.vy * t, r: e.r - 2 });
+    } else if (e instanceof G.Boss && e.hazard && (e instanceof G.CactusBoss || e instanceof G.TreeBoss)) {
+      const hb = e instanceof G.TreeBoss ? e.trunk() : { x: e.x + 5, y: e.y + 4, w: e.w - 10, h: e.h - 4 };
+      out.push({ c: false, x: hb.x + e.vx * t, y: hb.y + e.vy * t, w: hb.w, h: hb.h });
     } else if (e instanceof G.Boss && e.hazard) {
       let x = e.cx,
         y = e.cy;
@@ -32,7 +41,7 @@ function hazardsAt(W, t) {
         x += e.vx * t;
         y += e.vy * t + 0.5 * e.ay * t * t;
       }
-      const r = e instanceof G.MoonBoss ? e.r - 6 : e.rr - 3;
+      const r = e instanceof G.MoonBoss || e instanceof G.SunBoss ? e.r - 6 : e instanceof G.BlackHole ? e.r * e.size - 4 : e.rr - 3;
       out.push({ c: true, x, y, r });
     }
   }
@@ -73,7 +82,8 @@ function hit(p, h, m) {
 }
 
 function fight(id) {
-  const r = new Runner(G, id, { spawn: spawnAt(G, id, id === '2-B' ? '@' : 'S'), diff: easy ? 'easy' : 'normal' });
+  const ENTRY = { '5-B': 30, '6-B': 30, '7-B': 30, '8-B': 100 };
+  const r = new Runner(G, id, { spawn: ENTRY[id] ? { x: ENTRY[id], y: 226, face: 1 } : spawnAt(G, id, id === '2-B' ? '@' : 'S'), diff: easy ? 'easy' : 'normal' });
   const W = r.W;
   if (id === '2-B') {
     W.player.x = 440;
@@ -103,7 +113,8 @@ function fight(id) {
       const fut = [];
       for (let k = 1; k <= H; k++) fut.push(hazardsAt(W, k));
       // 撃ちやすい位置（ボスと同じ高さ・少し離れた場所）
-      const want = !b.vulnerable ? (id === '2-B' ? 200 : P.cx) : G.clamp(b.cx + (P.cx < b.cx ? -90 : 90), 30, 450);
+      let want = !b.vulnerable ? (id === '2-B' || ENTRY[id] ? 200 : P.cx) : G.clamp(b.cx + (P.cx < b.cx ? -90 : 90), 30, 450);
+      if (b.vulnerable && (id === '7-B' || id === '8-B')) want = id === '8-B' ? 200 : G.clamp(b.cx + (P.cx < b.cx ? -150 : 150), 30, 450);
       let best = null;
       for (const pl of PLANS) {
         const path = planPath(P, pl, H);

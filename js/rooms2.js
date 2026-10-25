@@ -99,7 +99,7 @@
   // AREA 5 灼熱の砂漠
   // =====================================================================
   R['5-1'] = {
-    hint: 'サボテンには背中を見せず、向き合って撃とう。光る床は蜃気楼。穴の柱が引っこんでから跳び、出口の手前では一度止まろう。',
+    hint: 'ハゲワシは急降下を見てから一歩引こう。サボテンには背中を見せず、向き合って撃とう。光る床は蜃気楼。穴の柱が引っこんでから跳び、出口の手前では一度止まろう。',
     area: 5,
     name: '5-1 蜃気楼',
     theme: 'desert',
@@ -132,6 +132,27 @@
       W.decor(430, 200, 'cactusbg');
       W.decor(330, 210, 'cactusbg', { small: true });
       W.sign(5, 11, `ようこそ 2面へ\n${shotHint()} で撃てるのを忘れずに`, { range: 30 });
+      // ⓪ ハゲワシ：上空を飛んできて、歩いている先へ急降下（止まっていると真上から）
+      W.trigPx(100, 0, 20, 280, () => {
+        const b = W.fruit(500, 70, { kind: 'bird', r: 7, cause: 'ハゲワシに狙われた。' });
+        b.vel(-2.6, 0);
+        b.dived = false;
+        b.offscreenKill = 60;
+        b.tick = function () {
+          const P = W.player;
+          if (!this.dived && P.alive && Math.abs(P.cx - this.cx) < 70) {
+            this.dived = true;
+            const tx = P.cx + P.vx * 26,
+              ty = 232;
+            const dx = tx - this.cx,
+              dy = ty - this.cy;
+            const d = Math.hypot(dx, dy) || 1;
+            this.vel((dx / d) * 4.2, (dy / d) * 4.2);
+            G.sfx('whoosh');
+          }
+        };
+        G.sfx('warn');
+      }, { cond: (P) => P.onGround });
       // ① だるまさんがころんだサボテン：背中を向けると追ってくる。向き合って3発撃てば倒せる
       W.walker(11 * T + 3, 11 * T, { cause: 'だるまさんがころんだ。', hp: 3, speed: 2.6 });
       // ② 13〜14列目の床は蜃気楼（F）
@@ -148,7 +169,7 @@
   };
 
   R['5-2'] = {
-    hint: '砂嵐は空中にいる時だけ流される。風がやんでから跳ぼう。右の足場は罠。最後の穴の手前で一度跳んで、下降気流をやり過ごそう。',
+    hint: '砂嵐は空中にいる時だけ流される。風がやんでから跳ぼう。2つ目の島の真ん中には立たない。右の足場は罠。最後の穴の手前で一度跳んで、下降気流をやり過ごそう。',
     area: 5,
     name: '5-2 砂嵐',
     theme: 'desert',
@@ -198,6 +219,8 @@
           yield 120;
         }
       });
+      // ⓪ 2つ目の島の真ん中（10列目）に立つと砂からヘビ
+      W.popSpike(10, 11, 'u', [10, 9, 1, 3], { cause: '砂の中にヘビがいた。', cond: (P) => P.onGround, pal: 'gold' });
       // ① 右の足場は蜃気楼：乗ると抜ける
       for (const tx of [14, 15]) {
         const b = W.tileToBlock(tx, 10, { oneway: true });
@@ -220,7 +243,7 @@
   };
 
   R['5-3'] = {
-    hint: '床の板は踏まない。お宝には触らない。ミイラが起きたら立ち止まらず、落とし穴は大きく跳び越えよう。',
+    hint: '床の板は踏まない。お宝には触らない。ミイラが起きたら立ち止まらず、落とし穴は大きく跳び越えよう。出口の手前では大岩を跳ぼう。',
     area: 5,
     name: '5-3 ピラミッド',
     theme: 'temple',
@@ -291,6 +314,12 @@
         G.sfx('rumble');
         W.say('ウゥ……', 310, 190, 40, { plain: true, size: 10, color: '#d8ccb0' });
       });
+      // ⑤ 出口の手前で大岩が転がってくる
+      W.trigPx(432, 0, 20, 280, () => {
+        const r = W.rock(500, 240 - 12, { r: 12, cause: 'ピラミッドといえば大岩。' });
+        r.vel(-3, 0);
+        G.sfx('rumble');
+      }, { cond: (P) => P.onGround });
       // ④ 落とし穴（18〜20列目）
       const door = [18, 19, 20].map((tx) => W.tileToBlock(tx, 12, { keep: true }));
       let opened = false;
@@ -364,7 +393,7 @@
   // AREA 6 太陽の神殿
   // =====================================================================
   R['6-1'] = {
-    hint: '炎は左から順に噴く。止まりすぎると太陽の目に焼かれる。最後の通気口は近づいて一度噴かせてから通ろう。',
+    hint: '炎は左から順に噴く。太陽の目の真下では待たない。止まりすぎても焼かれる。最後の通気口は近づいて一度噴かせてから通ろう。',
     area: 6,
     name: '6-1 炎の回廊',
     theme: 'temple',
@@ -415,6 +444,16 @@
         // ③ 止まりすぎると太陽の目が焼いてくる
         if (P.alive && P.onGround && !P.vx) W.vars.still = (W.vars.still || 0) + 1;
         else W.vars.still = 0;
+        // ⑤ 太陽のレリーフの真下に立つと火の玉
+        if (!W.vars.eyeCd && P.alive && P.onGround && Math.abs(P.cx - 240) < 16) {
+          W.vars.eyeCd = 100;
+          W.after(8, () => {
+            const f = W.fruit(240, 66, { kind: 'fire', r: 6, cause: '太陽の目の真下に立っていた。' });
+            f.vel(0, 4.5);
+            G.sfx('shoot');
+          });
+        }
+        if (W.vars.eyeCd > 0) W.vars.eyeCd--;
         if (W.vars.still > 110) {
           W.laser(P.cx - 8, 40, 16, 200, { warn: 26, dur: 18, cause: '太陽の視線に焼かれた。止まりすぎ。', color: '#ffd84a' });
           G.sfx('charge');
@@ -445,7 +484,8 @@
   };
 
   R['6-2'] = {
-    hint: '昇る足場は上まで乗らずに右の足場へ。火の玉は落ちた直後に。出口のトゲは一度出させて引っこむのを待とう。',
+    hint: '昇る足場は途中で急加速するので、早めに右の足場へ。火の玉は落ちた直後に。出口のトゲは一度出させて引っこむのを待とう。',
+    spikeCauseFn: (W) => (W.vars.liftFast && W.player.y < 60 ? 'エレベーターが急加速した。' : null),
     area: 6,
     name: '6-2 光の縦穴',
     theme: 'temple',
@@ -482,6 +522,12 @@
       };
       el.tick = function () {
         G.Block.prototype.tick.call(this);
+        // 半分を過ぎると急加速
+        if (this.going && this.y < 150 && !W.vars.liftFast) {
+          W.vars.liftFast = true;
+          this.vel(0, -2.4);
+          G.sfx('trap');
+        }
         if (this.going && this.y <= 40) this.stop();
       };
       // ② 出口から火の玉（予告あり）
@@ -520,7 +566,7 @@
   };
 
   R['6-3'] = {
-    hint: '着地は穴の左側に。天井は近づくと落ちるので、一度落とさせて上がる途中でくぐろう。出口からは何か転がってくる。',
+    hint: '着地は穴の左側に。看板の前で立ち止まらない。天井は近づくと落ちるので、一度落とさせて上がる途中でくぐろう。出口からは何か転がってくる。',
     area: 6,
     name: '6-3 祭壇',
     theme: 'temple',
@@ -546,7 +592,21 @@
     setup(W) {
       W.decor(40, 150, 'torch');
       W.decor(200, 84, 'sunrelief', { small: true });
-      W.sign(15, 11, 'この先 太陽', { range: 30 });
+      W.sign(9, 11, 'この先 太陽\n（よく読んでね）', { range: 30 });
+      // 看板の前で立ち止まると看板が燃える
+      let read = 0;
+      W.onStep = () => {
+        const P = W.player;
+        if (read < 0 || !P.alive) return;
+        if (Math.abs(P.cx - 190) < 24 && P.onGround) read++;
+        else read = 0;
+        if (read > 40) {
+          read = -1;
+          const f = W.hbox(172, 196, 36, 44, { kind: 'flame', cause: '看板が燃えた。太陽の神殿だから。' });
+          f.life = 60;
+          G.sfx('explode');
+        }
+      };
       // ① 穴の右どなりの床は偽物（F）：乗ると下の部屋へ逆戻り
       // ② 天井が落ちてくる（近づくと震えずに一気に）
       const slab = W.block(18, 4, 4, 2, { style: 'stone', keep: true, squishCause: '神殿の天井は落ちるもの。' });
