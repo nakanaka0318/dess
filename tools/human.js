@@ -94,7 +94,8 @@ const S = {
   },
   '3-1': {
     from: 'S',
-    steps: [{ go: 276 }, { jump: 'L', hold: 12, steerFrames: 30 }, { go: 212 }, { jump: 'L', hold: 14 }, { go: 90 }, { until: (W, P) => W.ents.some((e) => e instanceof G.Spike && e.vx < 0 && e.x < P.cx + 70), dir: 0 }, { jump: 'L', hold: 16, dj: 28, djHold: 12 }, { go: -20 }], // 前から来るトゲは2段目で越える
+    // シャンデリアは一歩踏み込んで先に落とさせる
+    steps: [{ go: 276 }, { jump: 'L', hold: 12, steerFrames: 30 }, { go: 234 }, { wait: 40 }, { go: 212 }, { jump: 'L', hold: 14 }, { go: 90 }, { until: (W, P) => W.ents.some((e) => e instanceof G.Spike && e.vx < 0 && e.x < P.cx + 70), dir: 0 }, { jump: 'L', hold: 16, dj: 28, djHold: 12 }, { go: -20 }], // 前から来るトゲは2段目で越える
     goal: 'left',
   },
   '3-2': {
@@ -104,6 +105,7 @@ const S = {
       { go: 348 }, { wait: 60 }, // 天井を一歩進んで止まり、上に落ちるリンゴを先に通す
       { go: 290 }, { jump: 'L', hold: 10 }, // 天井のトゲ
       { go: 196 }, { jump: 'L', hold: 14 }, // 罠オーブを飛び越える
+      { go: 108 }, { jump: 'L', hold: 8 }, // さかさまの床から出るトゲを跳び越える
       { go: 54 }, { wait: 40 }, { go: -20 },
     ],
     goal: 'left',
@@ -131,7 +133,7 @@ const S = {
   },
   '4-2': {
     from: 'S',
-    steps: [{ go: 110 }, { jump: 0, hold: 16, dj: 18, djHold: 14 }, { wait: 30 }, { go: 120 }, { go: 124 }, { shoot: 4 }, { wait: 90 }, { go: 500 }],
+    steps: [{ go: 110 }, { jump: 0, hold: 16, dj: 18, djHold: 14 }, { wait: 30 }, { go: 120 }, { go: 124 }, { shoot: 4 }, { wait: 90 }, { go: 418 }, { jump: 'R', hold: 12 }, { go: 500 }], // 扉の先の偽の床を跳び越える
   },
   '4-3': {
     from: 'S',

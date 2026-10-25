@@ -40,7 +40,7 @@ for (; t < 60 * 40; t++) {
     }
   } else if (P.onGround && P.y > 200) {
     // 「THE END」の文字が落ちてくるまではその下から離れて待つ
-    const theEnd = W.ents.some((e) => e.alive && e instanceof G.BigText && e.text === 'THE END');
+    const theEnd = W.ents.some((e) => e.alive && e instanceof G.BigText && (e.text === 'THE END' || e.text === 'Thank you for playing!'));
     tx = theEnd || W.time < 30 ? 340 : 290;
   }
   else if (P.onGround && P.y < 100) tx = 500;

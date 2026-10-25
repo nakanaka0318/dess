@@ -26,13 +26,20 @@ const NAIVE = [
   // 1面に追加した理不尽
   { id: '1-1', name: '見えないブロック', from: '@', steps: [{ go: 142 }, { wait: 40 }, { go: 196 }, { wait: 45 }, { jump: 'R', hold: 14 }, { go: 318 }, { jump: 'R', hold: 12 }, { go: 392 }, { jump: 'R', hold: 20 }, { go: 500 }], expect: /見えない/ },
   { id: '1-2', name: '戻ってくる月', from: 'S', steps: [{ go: 50 }, { jump: 'R', hold: 10 }, { go: 104 }, { jump: 'R', hold: 12 }, { go: 160 }, { jump: 'R', hold: 10 }, { go: 290 }, { go: 330 }, { wait: 90 }, { go: 500 }], expect: /戻って/ },
-  { id: '1-3', name: '抜ける足場', from: 'S', steps: [{ go: 92 }, { jump: 0, hold: 6 }, { wait: 30 }, { go: 214 }, { jump: 'R', hold: 14, steerFrames: 24 }, { go: 272 }, { jump: 'R', hold: 16, dj: 18, djHold: 14, steerFrames: 50 }, { wait: 40 }, { go: 374 }], expect: /トゲ|刺さ|痛い|鋭い|仲良く|触れて/ },
+  { id: '1-3', name: '抜ける足場', from: 'S', steps: [{ go: 92 }, { jump: 0, hold: 6 }, { wait: 30 }, { go: 214 }, { jump: 'R', hold: 14, steerFrames: 24 }, { go: 272 }, { jump: 'R', hold: 16, dj: 18, djHold: 14, steerFrames: 50 }, { wait: 40 }, { go: 374 }], expect: /トゲ|刺さ|痛い|鋭い|仲良く|触れて|裏切ら|そこに|やあ/ },
   { id: '1-4', name: 'セーブ直後のリンゴ', enter: { x: 86, y: 262, vy: -5 }, steps: [{ wait: 90 }], expect: /セーブした直後/ },
   { id: '2-1', name: '後ろから転がるリンゴ', from: 'S', steps: [{ go: 96 }, { wait: 40 }, { go: 180 }, { go: 196 }, { wait: 200 }], expect: /上ばかり/ },
   { id: '2-2', name: '本気のベルト', from: 'S', steps: [{ go: 378 }, { go: 372 }, { go: 386 }, { wait: 30 }, { go: 312 }, { go: 330 }, { wait: 60 }, { go: 276 }, { jump: 'L', hold: 12 }, { go: 206 }, { wait: 50 }, { go: 186 }, { jump: 'L', hold: 4 }, { go: -20 }], expect: /本気を出した/ },
   { id: '2-4', name: '着地点のトゲ', enter: { x: 146, y: 226 }, steps: [{ jump: 'L', hold: 16 }, { go: -20 }], goal: 'left', expect: /気がゆるんだ/ },
   { id: '3-1', name: '前からのトゲ', base: '3-1', replaceJump: { jump: 'L', hold: 16 }, expect: /前に注意/ },
   { id: '3-4', name: 'THE END の文字', enter: { x: 206, y: 262, vy: -5 }, steps: [{ wait: 240 }], expect: /THE END/ },
+  // 1面後半に追加
+  { id: '3-1', name: 'シャンデリア', from: 'S', steps: [{ go: 276 }, { jump: 'L', hold: 12, steerFrames: 30 }, { go: 212 }, { jump: 'L', hold: 14 }, { go: 90 }], expect: /シャンデリア/ },
+  { id: '3-2', name: 'さかさまの床のトゲ', base: '3-2', cutStep: { go: 108 }, expect: /さかさまの床/ },
+  { id: '3-4', name: 'Thank you の文字', enter: { x: 206, y: 262, vy: -5 }, steps: [{ go: 340 }, { wait: 50 }, { go: 240 }, { wait: 200 }], expect: /Thank you/ },
+  { id: '4-1', name: '願いごとの看板', enter: { x: 1, y: 66 }, steps: [{ go: 70 }, { jump: 'R', hold: 12 }, { go: 130 }, { wait: 120 }], expect: /願いごと|流れ星/ },
+  { id: '4-2', name: '扉の先の落とし穴', base: '4-2', cutStep: { go: 418 }, expect: /落とし穴/ },
+  { id: '4-3', name: '月のおかわり', base: '4-3', replaceWait: { from: 90, to: 40 }, expect: /おかわり|贈り物/ },
   // 2面
   { id: '5-1', name: 'だるまサボテン', from: '@', steps: [{ go: 124 }, { jump: 'R', hold: 14 }, { go: 196 }, { jump: 'R', hold: 14 }, { go: 500 }], expect: /だるまさん/ },
   { id: '5-1', name: '砂の柱', enter: { x: 310, y: 226 }, steps: [{ go: 352 }, { jump: 'R', hold: 12 }, { go: 500 }], expect: /砂の中/ },
@@ -67,6 +74,15 @@ function derive(n) {
     const w = +n.cut.replace('wait', '');
     const i = steps.findIndex((s) => s.wait === w);
     steps.splice(i, 1);
+  }
+  if (n.cutStep) {
+    // 指定した手順とその直後のジャンプを抜く（罠を知らずに歩き抜ける）
+    const i = steps.findIndex((s) => s.go === n.cutStep.go);
+    steps.splice(i, 2);
+  }
+  if (n.replaceWait) {
+    const i = steps.findIndex((s) => s.wait === n.replaceWait.from);
+    steps[i] = { wait: n.replaceWait.to };
   }
   if (n.replaceJump) {
     const i = steps.map((s) => !!s.dj).lastIndexOf(true);

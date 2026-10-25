@@ -294,6 +294,19 @@
       circle(ctx, cx, cy, Math.max(1, f.r - 3));
       return true;
     }
+    if (f.kind === 'bird') {
+      const flap = Math.floor(f.t / 5) % 2;
+      const d = f.vx < 0 ? -1 : 1;
+      ctx.fillStyle = '#4a2a1a';
+      ctx.fillRect(cx - 5, cy - 2, 10, 5);
+      ctx.fillRect(cx - 10, cy - (flap ? 5 : -1), 7, 3);
+      ctx.fillRect(cx + 3, cy - (flap ? 5 : -1), 7, 3);
+      ctx.fillStyle = '#e8d8c0';
+      ctx.fillRect(cx + d * 5 - 2, cy - 4, 4, 4);
+      ctx.fillStyle = '#ffb030';
+      ctx.fillRect(cx + d * 8 - 1, cy - 2, 3, 2);
+      return true;
+    }
     if (f.kind === 'seed') {
       ctx.fillStyle = '#ff7ab0';
       circle(ctx, cx, cy, f.r);
@@ -328,6 +341,37 @@
 
   const baseHazard = R.drawHazardBox;
   R.drawHazardBox = function (ctx, h) {
+    if (h.kind === 'chandelier') {
+      const x = Math.round(h.x),
+        y = Math.round(h.y);
+      ctx.fillStyle = '#8a6a20';
+      ctx.fillRect(x, y + 6, h.w, 3);
+      ctx.fillRect(x + h.w / 2 - 1, y - 2, 2, 8);
+      ctx.fillStyle = '#ffd84a';
+      for (let i = 0; i < 4; i++) {
+        ctx.fillRect(x + 1 + i * 7, y + 2, 2, 4);
+        ctx.fillStyle = Math.floor((h.W.time + i * 5) / 6) % 2 ? '#ffffff' : '#ff9a30';
+        ctx.fillRect(x + 1 + i * 7, y, 2, 2);
+        ctx.fillStyle = '#ffd84a';
+      }
+      ctx.fillStyle = '#c8a040';
+      ctx.fillRect(x + 4, y + 9, h.w - 8, 3);
+      ctx.fillRect(x + 9, y + 12, h.w - 18, 2);
+      return;
+    }
+    if (h.kind === 'flame') {
+      const x = Math.round(h.x),
+        y = Math.round(h.y);
+      for (let i = 0; i < 6; i++) {
+        const fx = x + 3 + i * 5,
+          fh = 24 + Math.sin(h.t * 0.6 + i) * 8;
+        ctx.fillStyle = '#ff5a10';
+        ctx.fillRect(fx, y + h.h - fh, 5, fh);
+        ctx.fillStyle = '#ffd84a';
+        ctx.fillRect(fx + 1, y + h.h - fh * 0.6, 3, fh * 0.6);
+      }
+      return;
+    }
     if (h.kind === 'pillar') {
       const x = Math.round(h.x),
         y = Math.round(h.y);
