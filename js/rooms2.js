@@ -685,7 +685,7 @@
   // AREA 7 さかさまの宇宙
   // =====================================================================
   R['7-1'] = {
-    hint: '低重力なので跳びすぎると天井のトゲに届く。最初の穴の手前で一度跳んで重力を戻させ、元に戻ってから渡ろう。',
+    hint: '低重力なので跳びすぎると天井のトゲに届く。最初の穴の手前で一度跳んで重力を戻させ、元に戻ってから渡ろう。2つ目の穴の手前のジャンプ台は踏まない。',
     area: 7,
     name: '7-1 無重力',
     theme: 'void',
@@ -707,7 +707,10 @@
       '#####.....####.....#####',
       '#####^^^^^####^^^^^#####',
     ],
-    spikeCauseFn: (W) => (W.gravScale > 0.9 && W.player.cx < 220 ? '重力が急に戻った。' : null),
+    spikeCauseFn: (W) => {
+      if (W.vars.boing && W.player.y < 120) return '宇宙のトランポリン。跳びすぎた。';
+      return W.gravScale > 0.9 && W.player.cx < 220 ? '重力が急に戻った。' : null;
+    },
     setup(W) {
       W.gravScale = 0.45;
       W.sign(4, 11, 'ここは無重力\n（跳びすぎ注意）', { range: 30 });
@@ -723,6 +726,9 @@
       W.onStep = () => {
         if (W.vars.gLabel > 0) W.vars.gLabel--;
       };
+      // ①' 2つ目の穴の手前にジャンプ台：低重力なので天井のトゲまで飛ばされる
+      const sp = W.spring(13, 11, { power: 5.2 });
+      sp.onBounce = () => (W.vars.boing = true);
       // ② 2つ目の穴の上を漂うトゲ
       for (const [x, ph] of [[296, 0], [344, 0.5]]) {
         const sp = W.spikePx(x, 160, 'u', { keep: true, cause: '宇宙をただようトゲ。', pal: 'crystal' });
@@ -746,7 +752,7 @@
   };
 
   R['7-2'] = {
-    hint: '左右反転は看板より手前から始まる。反転中は左を押すと右へ進む。反転は穴の手前で解けるので、解けてから普通に跳ぼう。',
+    hint: '左右反転は看板より手前から始まる。反転中は左を押すと右へ進む。穴の手前で解けた後、もう一度だけ反転するので、それが終わってから跳ぼう。',
     area: 7,
     name: '7-2 さかさま回廊',
     theme: 'void',
@@ -771,7 +777,7 @@
     spikeCauseFn: (W) => {
       const x = W.player.cx;
       if (x < 150) return W.vars.revSeen ? '左右反転は看板より手前から始まっていた。' : null;
-      if (x > 330) return '反転は空中で解けた。';
+      if (x > 330) return W.vars.revAgain ? '反転はまだ終わっていなかった。' : '反転は空中で解けた。';
       return W.reverse ? 'さかさまの世界で迷子になった。' : null;
     },
     setup(W) {
@@ -787,10 +793,20 @@
           G.sfx('flip');
           W.say('左右反転！', P.cx, P.y - 8, 40, { plain: true, size: 10, color: '#ff9af0' });
         }
-        if (W.reverse && P.cx >= 338) {
+        if (W.reverse && P.cx >= 338 && !W.vars.revDone) {
           W.reverse = false;
           W.vars.revDone = true;
           G.sfx('flip');
+          // 終わったと見せかけて、少しするともう一度だけ反転する
+          W.after(24, () => {
+            W.reverse = true;
+            W.vars.revAgain = true;
+            G.sfx('flip');
+            W.after(36, () => {
+              W.reverse = false;
+              G.sfx('flip');
+            });
+          });
         }
       };
       // ② 反転中に天井のトゲが1本落ちてくる
@@ -807,7 +823,7 @@
   };
 
   R['7-3'] = {
-    hint: '暗闇は光った瞬間に足場を覚えよう。真ん中の低い足場は乗ると抜ける。最後の足場では黒いリンゴに注意。',
+    hint: '暗闇は光った瞬間に足場を覚えよう。真ん中の低い足場は乗ると抜ける。最後の足場は左端を避け、黒いリンゴに注意。',
     spikeCauseFn: (W) => (W.vars.midGone ? '暗闇の足場は抜けるもの。' : '暗くて見えなかった。'),
     area: 7,
     name: '7-3 闇の星座',
@@ -854,6 +870,14 @@
           W.vars.midGone = true;
           W.after(8, () => mids.forEach((m) => m.drop(0.5)));
         };
+      // ①' 最後の足場の左端には、光った瞬間だけ現れるトゲ
+      const fs = W.spike(18, 9, 'u', { cause: '光った瞬間だけ現れるトゲ。', pal: 'crystal' });
+      fs.tick = function () {
+        G.Spike.prototype.tick.call(this);
+        const on = W.vars.flashT > 0;
+        this.visible = on;
+        this.hazard = on;
+      };
       // ② 最後の足場の上を黒いリンゴがゆっくり往復する（光った時と近くでしか見えない）
       const dark = W.fruit(370, 180, { kind: 'dark', r: 6, keep: true, cause: '暗闇に黒いリンゴ。見えるわけがない。' });
       dark.tick = function () {
@@ -923,7 +947,7 @@
   // AREA 8 ニュートンの庭
   // =====================================================================
   R['8-1'] = {
-    hint: '1本目の木は一歩入って戻り、リンゴを先に落とそう。大きな木は撃つと穴の上に倒れて橋になる。丸太の上ではリンゴを跳び越えよう。',
+    hint: '1本目の木は一歩入って戻り、リンゴを先に落とそう。大きな木は撃つと穴の上に倒れて橋になる。丸太の上ではリンゴを、出口の手前では金のリンゴを跳び越えよう。',
     area: 8,
     name: '8-1 ニュートンの庭',
     theme: 'garden',
@@ -984,6 +1008,8 @@
         }, { cond: (P) => P.onGround });
       };
       W.sign(8, 11, '木こり募集中', { range: 24 });
+      // 出口の手前に禁断の果実
+      W.fruit(410, 232, { kind: 'gold', r: 6, keep: true, cause: '禁断の果実に手を出した。' });
     },
   };
 
@@ -1032,7 +1058,7 @@
   }
 
   R['8-2'] = {
-    hint: '重力が強いので2段ジャンプで渡ろう。リンゴは引き寄せられてくるので、一度左へ逃げて落ちるのを待とう。',
+    hint: '重力が強いので2段ジャンプで渡ろう。リンゴは引き寄せられてくるので、一度左へ逃げて落ちるのを待とう。3つ目の島には長居しない。',
     area: 8,
     name: '8-2 万有引力',
     theme: 'garden',
@@ -1058,6 +1084,17 @@
     setup(W) {
       W.gravScale = 1.3;
       W.sign(4, 11, 'この先 重力強め', { range: 30 });
+      // 3つ目の島に立つと、果物かごがひっくり返る
+      W.decor(340, 0, 'branch');
+      W.trigPx(340, 0, 80, 280, () => {
+        W.after(10, () => {
+          for (let i = 0; i < 5; i++) {
+            const a = W.fruit(350 + i * 15, -10 - (i % 2) * 14, { cause: '果物かごをひっくり返された。', splat: true });
+            a.vel(0, 3, 0, 0.4);
+          }
+          G.sfx('whoosh');
+        });
+      }, { cond: (P) => P.onGround });
       // リンゴは近づくとプレイヤーに引き寄せられ、しばらくすると普通に落ちる
       for (const x of [170, 300, 430]) {
         W.decor(x - 40, 0, 'branch');
@@ -1094,7 +1131,7 @@
   };
 
   R['8-3'] = {
-    hint: 'セーブポイントは撃って確かめよう（本物は1つ）。手紙の前では立ち止まらない。最後の足場ではリンゴが落ちてから跳ぼう。',
+    hint: 'セーブポイントは撃って確かめよう（本物は1つ）。手紙と右の看板の前では立ち止まらない。最後の足場ではリンゴが落ちてから跳ぼう。',
     area: 8,
     name: '8-3 最後のセーブ',
     theme: 'garden',
@@ -1119,6 +1156,21 @@
     ],
     setup(W) {
       W.sign(20, 11, '本物のセーブは\nひとつだけ', { range: 30 });
+      // この看板もハズレ：読んでいると爆発する
+      let readS = 0;
+      W.run(function* () {
+        for (;;) {
+          const P = W.player;
+          if (P.alive && P.onGround && Math.abs(P.cx - 410) < 24) readS++;
+          else readS = 0;
+          if (readS > 30) break;
+          yield 1;
+        }
+        const ex = W.hbox(392, 200, 36, 40, { kind: 'flame', cause: '看板もハズレだった。' });
+        ex.life = 40;
+        W.burst(410, 220, 30, ['#ffd84a', '#ff5a10', '#ffffff'], 3, { g: 0.1 });
+        G.sfx('explode');
+      });
       // ① 5つのセーブのうち本物は1つ（14列目）。偽物に触れると爆発
       for (const tx of [6, 9, 12, 14, 17]) {
         const sp = W.save(tx, 11, { fake: tx !== 14 });

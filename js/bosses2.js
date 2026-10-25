@@ -678,7 +678,7 @@
   // ------------------------------------------------------------------
   class BlackHole extends G.Boss {
     constructor(W, cx, cy) {
-      super(W, cx - 22, cy - 22, 44, 44, { hp: 90, name: 'ブラックホール' });
+      super(W, cx - 22, cy - 22, 44, 44, { hp: 140, name: 'ブラックホール' });
       this.r = 22;
       this.size = 0.15;
       this.spin = 0;
@@ -701,12 +701,16 @@
           const dx = this.cx - b.x,
             dy = this.cy - b.y;
           const d = Math.hypot(dx, dy) || 1;
-          b.vx += (dx / d) * 0.4;
-          b.vy += (dy / d) * 0.4;
+          // 近いほど強く曲がる（周回せずに吸いこまれる）
+          const k = 0.45 + 40 / d;
+          b.vx += (dx / d) * k;
+          b.vy += (dy / d) * k;
           const v = Math.hypot(b.vx, b.vy) || 1;
           b.vx *= 6 / v;
           b.vy *= 6 / v;
-          b.life = Math.max(b.life, 8);
+          // 後ろ向きに撃った弾もしばらくは戻ってこられるように（ただし永遠には回らない）
+          b.bhT = (b.bhT || 0) + 1;
+          if (b.bhT < 90) b.life = Math.max(b.life, 8);
         }
     }
     draw(ctx) {
@@ -743,9 +747,9 @@
       G.sfx('charge');
       yield 20;
       let a = rng.range(0, 6.28);
-      const arms = phase2() ? 3 : 2;
-      for (let t = 0; t < 140; t++) {
-        if (t % 7 === 0) {
+      const arms = phase2() ? 4 : 3;
+      for (let t = 0; t < 150; t++) {
+        if (t % 6 === 0) {
           for (let k = 0; k < arms; k++) {
             const ang = a + (k / arms) * Math.PI * 2;
             debris(h.cx + Math.cos(ang) * 16, h.cy + Math.sin(ang) * 16, Math.cos(ang) * 1.6, Math.sin(ang) * 1.6);
@@ -762,7 +766,7 @@
       G.sfx('rumble');
       pullBase = phase2() ? 1.0 : 0.9;
       for (let t = 0; t < 130; t++) {
-        if (t % 16 === 0) {
+        if (t % 11 === 0) {
           const side = rng.chance(0.5) ? -1 : 1;
           const y = rng.range(150, 236);
           const x = side < 0 ? -8 : 488;
@@ -778,12 +782,12 @@
     }
     // 吐き出し：星の輪（輪ごとに隙間がずれる）
     function* exhale() {
-      for (let w = 0; w < (phase2() ? 3 : 2); w++) {
+      for (let w = 0; w < (phase2() ? 4 : 3); w++) {
         h.size = 1.25;
         G.sfx('charge');
-        yield 20;
+        yield 18;
         h.size = 1;
-        const n = 12,
+        const n = 16,
           off = (w % 2) * (Math.PI / n);
         for (let i = 0; i < n; i++) {
           const a = off + (i / n) * Math.PI * 2;
@@ -792,6 +796,55 @@
         G.sfx('explode');
         yield 40;
       }
+    }
+    // 降着円盤：周りを回る星の輪が広がり、一斉に飛び散る
+    function* disk() {
+      G.sfx('charge');
+      const n = phase2() ? 18 : 14;
+      const ring = [];
+      for (let i = 0; i < n; i++) {
+        const f = W.fruit(h.cx, h.cy, { kind: 'star', r: 4, keep: true, cause: '降着円盤に巻きこまれた。' });
+        f.bossShot = true;
+        ring.push(f);
+      }
+      let a = 0;
+      for (let t = 0; t < 90; t++) {
+        a += 0.05;
+        const rad = 20 + t * 0.9;
+        ring.forEach((f, i) => {
+          const ang = a + (i / n) * Math.PI * 2;
+          f.x = h.cx + Math.cos(ang) * rad - f.r;
+          f.y = h.cy + Math.sin(ang) * rad * 0.8 - f.r;
+        });
+        yield 1;
+      }
+      G.sfx('explode');
+      ring.forEach((f, i) => {
+        const ang = a + (i / n) * Math.PI * 2;
+        // 接線方向へ飛ばす
+        f.vel(Math.cos(ang + Math.PI / 2) * 1.6 + Math.cos(ang) * 0.8, Math.sin(ang + Math.PI / 2) * 1.6 + Math.sin(ang) * 0.8);
+        f.offscreenKill = 60;
+      });
+      yield 50;
+    }
+    // ジェット：中心から反対向きの2本の流れが回転しながら噴き出す（後半）
+    function* jets() {
+      W.say('ゴォォォ！', 0, 0, 40, { follow: h, dy: -14 });
+      G.sfx('roar');
+      yield 24;
+      let a = rng.range(0, 6.28);
+      const spin = rng.chance(0.5) ? 0.022 : -0.022;
+      for (let t = 0; t < 160; t++) {
+        if (t % 4 === 0) {
+          for (const d of [0, Math.PI]) {
+            const ang = a + d;
+            debris(h.cx + Math.cos(ang) * 14, h.cy + Math.sin(ang) * 14, Math.cos(ang) * 2.6, Math.sin(ang) * 2.6, 'star', 'ジェットの直撃を受けた。');
+          }
+        }
+        a += spin;
+        yield 1;
+      }
+      yield 30;
     }
     // 後半：ゆっくり横に動く
     function* drift() {
@@ -826,16 +879,18 @@
       if (W.easy) W.lives = 3;
       let last = '';
       for (;;) {
-        const pool = phase2() ? ['spiral', 'inhale', 'exhale', 'drift'] : ['spiral', 'inhale', 'exhale'];
+        const pool = phase2() ? ['spiral', 'inhale', 'exhale', 'drift', 'disk', 'jets'] : ['spiral', 'inhale', 'exhale', 'disk'];
         let p;
         do p = rng.pick(pool);
         while (p === last);
         last = p;
-        if (p === 'spiral') yield* spiral();
+        if (p === 'disk') yield* disk();
+        else if (p === 'jets') yield* jets();
+        else if (p === 'spiral') yield* spiral();
         else if (p === 'inhale') yield* inhale();
         else if (p === 'exhale') yield* exhale();
         else yield* drift();
-        yield phase2() ? 16 : 26;
+        yield phase2() ? 10 : 18;
       }
     }, h.ai);
 
@@ -903,7 +958,7 @@
   // ------------------------------------------------------------------
   class TreeBoss extends G.Boss {
     constructor(W, cx) {
-      super(W, cx - 55, 30, 110, 210, { hp: 220, name: 'ニュートンの樹' });
+      super(W, cx - 55, 30, 110, 210, { hp: 250, name: 'ニュートンの樹' });
       this.face = 'calm';
       this.sway = 0;
       this.rot = 0;
@@ -944,7 +999,7 @@
     // リンゴの雨（重力の向きに落ちる）
     function* rain() {
       t.face = 'grin';
-      const n = [7, 9, 11][phase() - 1];
+      const n = [10, 13, 16][phase() - 1];
       const xs = [];
       for (let i = 0; i < n; i++) xs.push(rng.range(24, 380));
       const g = W.gravity;
@@ -984,7 +1039,7 @@
       W.say('葉っぱカッター！', 0, 0, 50, { follow: t, dy: -6 });
       W.windX = -0.7;
       for (let k = 0; k < 150; k++) {
-        if (k % 12 === 0) {
+        if (k % 7 === 0) {
           const y = rng.range(30, 236);
           const lf = W.fruit(480, y, { kind: 'leaf', r: 4, cause: '葉っぱで切れた。' });
           lf.base = y;
@@ -997,6 +1052,45 @@
         yield 1;
       }
       W.windX = 0;
+      yield 30;
+    }
+    // 果実の扇：枝からこちらを狙って扇状にリンゴを投げる
+    function* fan() {
+      t.face = 'grin';
+      for (let v = 0; v < (phase() === 3 ? 4 : 3); v++) {
+        G.sfx('charge');
+        yield 18;
+        const sx = t.cx - 50,
+          sy = t.y + 50;
+        const a0 = Math.atan2(P.cy - sy, P.cx - sx);
+        const n = 9;
+        for (let i = 0; i < n; i++) {
+          const a = a0 + (i - (n - 1) / 2) * 0.13;
+          const f = apple(sx, sy, 5, '扇状のリンゴに当たった。');
+          f.vel(Math.cos(a) * 3, Math.sin(a) * 3 - 0.6, 0, 0.03 * W.gravity);
+        }
+        G.sfx('shoot');
+        yield 26;
+      }
+      t.face = 'calm';
+      yield 20;
+    }
+    // 種マシンガン：狙い撃ちの種を連射
+    function* seeds() {
+      t.face = 'angry';
+      W.say('タネマシンガン！', 0, 0, 40, { follow: t, dy: -6 });
+      yield 24;
+      for (let k = 0; k < (phase() === 3 ? 36 : 26); k++) {
+        const sx = t.cx - 20,
+          sy = t.y + 110;
+        const a = Math.atan2(P.cy - sy, P.cx - sx) + rng.range(-0.12, 0.12);
+        const f = W.fruit(sx, sy, { kind: 'seed', r: 3, cause: '種マシンガンに撃ち抜かれた。' });
+        f.vel(Math.cos(a) * 3.4, Math.sin(a) * 3.4);
+        f.bossShot = true;
+        if (k % 3 === 0) G.sfx('shoot');
+        yield 4;
+      }
+      t.face = 'calm';
       yield 30;
     }
     // 引力反転：しばらく上下がさかさまになる
@@ -1013,6 +1107,7 @@
       yield 40;
       yield* rain();
       yield* roots();
+      if (phase() === 3) yield* seeds();
       W.say('……戻れ！', 0, 0, 40, { follow: t, dy: -6 });
       G.sfx('charge');
       yield 30;
@@ -1027,11 +1122,22 @@
       t.face = 'rage';
       G.sfx('warn');
       yield 24;
-      const a = apple(t.cx - 40, 240 - 20, 20, '大きなリンゴに轢かれた。');
-      a.vel(-3, 0);
-      a.offscreenKill = 60;
-      G.sfx('rumble');
-      yield 90;
+      for (let k = 0; k < 2; k++) {
+        const a = apple(t.cx - 40, 240 - 20, 20, '大きなリンゴに轢かれた。');
+        a.vel(-3 - k * 0.6, 0);
+        a.offscreenKill = 60;
+        G.sfx('rumble');
+        // 転がりながら小さなリンゴを撒く
+        a.tick = function () {
+          G.Fruit.prototype.tick.call(this);
+          if (this.t % 20 === 0) {
+            const b = apple(this.cx, this.cy - 16, 4, '大きなリンゴから小さなリンゴ。');
+            b.vel(0.4, -3.2, 0, 0.14);
+          }
+        };
+        yield 70;
+      }
+      yield 30;
       t.face = 'calm';
     }
     // 最後のあがき：根ごと跳んでくる
@@ -1108,17 +1214,19 @@
           yield* desperation();
           continue;
         }
-        const pool = ph === 1 ? ['rain', 'roots', 'leaves'] : ph === 2 ? ['rain', 'roots', 'leaves', 'flip'] : ['rain', 'roots', 'flip', 'big', 'leaves'];
+        const pool = ph === 1 ? ['rain', 'roots', 'leaves', 'fan'] : ph === 2 ? ['rain', 'roots', 'leaves', 'flip', 'fan', 'seeds'] : ['rain', 'roots', 'flip', 'big', 'leaves', 'fan', 'seeds'];
         let p;
         do p = rng.pick(pool);
         while (p === last);
         last = p;
-        if (p === 'rain') yield* rain();
+        if (p === 'fan') yield* fan();
+        else if (p === 'seeds') yield* seeds();
+        else if (p === 'rain') yield* rain();
         else if (p === 'roots') yield* roots();
         else if (p === 'leaves') yield* leaves();
         else if (p === 'flip') yield* flip();
         else yield* bigApple();
-        yield ph === 1 ? 24 : 14;
+        yield ph === 1 ? 16 : 10;
       }
     }, t.ai);
 

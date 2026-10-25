@@ -69,6 +69,20 @@ const NAIVE = [
   { id: '8-1', name: '跳べない穴', enter: { x: 156, y: 226 }, steps: [{ go: 196 }, { jump: 'R', hold: 16, dj: 20, djHold: 14 }, { go: 500 }], expect: /跳べる距離/ },
   { id: '8-3', name: '偽セーブ', enter: { x: 30, y: 226 }, steps: [{ go: 500 }], expect: /ハズレ/ },
   { id: '8-3', name: '手紙', enter: { x: 30, y: 226 }, steps: [{ go: 90 }, { wait: 150 }], expect: /花火/ },
+  { id: '7-1', name: '宇宙のトランポリン', enter: { x: 214, y: 226 }, steps: [{ go: 276 }, { wait: 120 }], expect: /トランポリン/ },
+  {
+    id: '7-2', name: 'まだ終わらない反転', from: 'S',
+    steps: [
+      { go: 92 }, { jump: 'R', hold: 12 },
+      { until: (W, P) => P.cx > 206, dir: 'L' }, { jump: 'L', hold: 14 }, // 反転中は左で右へ
+      { until: (W, P) => !W.reverse, dir: 'L' }, { wait: 4 }, { jump: 'R', hold: 16 }, { go: 500 }, // 解けたと思ってすぐ跳ぶ
+    ],
+    expect: /反転/,
+  },
+  { id: '7-3', name: '光った時だけのトゲ', enter: { x: 366, y: 186 }, steps: [{ wait: 140 }], expect: /光った瞬間/ },
+  { id: '8-1', name: '禁断の果実', enter: { x: 380, y: 226 }, steps: [{ go: 500 }], expect: /禁断/ },
+  { id: '8-2', name: '果物かご', enter: { x: 344, y: 226 }, steps: [{ go: 380 }, { wait: 60 }], expect: /果物かご/ },
+  { id: '8-3', name: '看板もハズレ', enter: { x: 370, y: 226 }, steps: [{ go: 410 }, { wait: 60 }], expect: /看板も/ },
 ];
 
 // human.js の手順を途中まで使う（cut: 指定した wait を消してすぐ進む）
