@@ -323,9 +323,14 @@
     const s = W.add(new SunBoss(W, 240, -80));
     const phase = () => (s.hp > s.maxHp * 0.66 ? 1 : s.hp > s.maxHp * 0.33 ? 2 : 3);
     const deaths = (W.game && W.game.deaths) || 0;
+    // 太陽の弾はすべて遅め（軌道は同じまま速さだけ落とす：速度×SLOW、加速度×SLOW²）
+    const SLOW = 0.7;
     const fire = (x, y, r, cause) => {
       const f = W.fruit(x, y, { kind: 'fire', r, cause });
       f.bossShot = true;
+      f.vel = function (vx, vy, ax, ay) {
+        return G.Ent.prototype.vel.call(this, (vx || 0) * SLOW, (vy || 0) * SLOW, (ax || 0) * SLOW * SLOW, (ay || 0) * SLOW * SLOW);
+      };
       return f;
     };
     function* goTo(cx, cy, d, ease) {
