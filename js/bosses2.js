@@ -1062,20 +1062,20 @@
     // 果実の扇：枝からこちらを狙って扇状にリンゴを投げる
     function* fan() {
       t.face = 'grin';
-      for (let v = 0; v < (phase() === 3 ? 4 : 3); v++) {
+      for (let v = 0; v < (phase() === 3 ? 3 : 2); v++) {
         G.sfx('charge');
-        yield 18;
+        yield 20;
         const sx = t.cx - 50,
           sy = t.y + 50;
         const a0 = Math.atan2(P.cy - sy, P.cx - sx);
-        const n = 9;
+        const n = 5;
         for (let i = 0; i < n; i++) {
-          const a = a0 + (i - (n - 1) / 2) * 0.13;
+          const a = a0 + (i - (n - 1) / 2) * 0.2;
           const f = apple(sx, sy, 5, '扇状のリンゴに当たった。');
-          f.vel(Math.cos(a) * 3, Math.sin(a) * 3 - 0.6, 0, 0.03 * W.gravity);
+          f.vel(Math.cos(a) * 2, Math.sin(a) * 2 - 0.4, 0, 0.014 * W.gravity);
         }
         G.sfx('shoot');
-        yield 26;
+        yield 40;
       }
       t.face = 'calm';
       yield 20;
