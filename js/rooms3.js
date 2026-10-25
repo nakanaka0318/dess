@@ -33,7 +33,13 @@
         P = W.player;
       if (this.used || !P.alive) return;
       const hit = G.overlap(P, { x: this.x + 4, y: this.y + 4, w: this.w - 8, h: this.h - 4 });
-      if (!hit) return;
+      // 部屋に入った時に扉と重なっていたら、一度離れるまで反応しない
+      if (this.armed === undefined) this.armed = !hit;
+      if (!hit) {
+        this.armed = true;
+        return;
+      }
+      if (!this.armed) return;
       if (!this.open) {
         if (this.locked) W.kill(this.locked);
         return;
@@ -481,7 +487,7 @@
     setup(W) {
       const p = W.piece(236, 176, 'piece3');
       if (p) p.onGet = () => W.say('……それ、ぼくの歯なんだけど', 240, 60, 90, {});
-      W.door(21, 10, { to: '9-A1', spawn: [14, 11], label: '↩' });
+      W.door(21, 10, { to: '9-A1', spawn: [16, 11], label: '↩' });
       W.sign(4, 11, '←ひみつの部屋', { range: 24 });
     },
   };

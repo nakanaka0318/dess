@@ -242,7 +242,14 @@
       game.histScroll = G.clamp((game.histScroll || 0) - G.histDrag / G.view.s, 0, max);
       G.histDrag = 0;
     }
-    const close = inp.jumpP || inp.okP || inp.shootP || inp.pauseP || taps.length;
+    // タップは右上の × だけで閉じる（スワイプでスクロールできるように）
+    const v = G.view;
+    const hitX = taps.some((t) => {
+      const x = (t.cx - v.x) / v.s,
+        y = (t.cy - v.y) / v.s;
+      return x > SW - 60 && y < 40;
+    });
+    const close = inp.jumpP || inp.okP || inp.shootP || inp.pauseP || hitX;
     if (close) {
       game.titleMode = game.prevTitleMode || 'main';
       titleMenus();
@@ -271,8 +278,6 @@
     dragY = e.clientY;
   });
   window.addEventListener('pointerup', () => {
-    // 大きく動かした時はスクロールだけ（とじない）
-    if (dragY != null && dragMoved > 8) G.consumeTaps();
     dragY = null;
   });
   function setTitleMode(m) {
