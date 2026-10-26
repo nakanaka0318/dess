@@ -460,4 +460,91 @@
       ctx.fill();
     }
   };
+
+  // =====================================================================
+  // 寄り道と追加の仕掛け
+  // =====================================================================
+  R.drawSecretApple = function (ctx, a) {
+    const cx = Math.round(a.cx),
+      cy = Math.round(a.cy);
+    const t = a.W.time;
+    ctx.fillStyle = `rgba(255,220,90,${0.25 + Math.sin(t * 0.12) * 0.1})`;
+    circle(ctx, cx, cy, 11);
+    ctx.fillStyle = '#c8102e';
+    circle(ctx, cx, cy + 1, 6);
+    ctx.fillStyle = '#ff4a5a';
+    circle(ctx, cx - 1, cy, 4);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(cx - 3, cy - 2, 2, 2);
+    ctx.fillStyle = '#5a3418';
+    ctx.fillRect(cx, cy - 8, 1, 4);
+    ctx.fillStyle = '#3aa04a';
+    ctx.fillRect(cx + 1, cy - 8, 4, 2);
+    // ひみつの「？」
+    if (Math.floor(t / 20) % 2) G.SPR.tiny(ctx, '?', cx + 6, cy - 12, '#ffe96a', 1);
+  };
+  R.drawChest = function (ctx, c) {
+    const x = Math.round(c.x),
+      y = Math.round(c.y);
+    const open = c.state === 'open';
+    const bite = c.state === 'bite';
+    const lid = bite ? -4 - (Math.floor(c.t / 4) % 2) * 3 : open ? -8 : 0;
+    ctx.fillStyle = c.hurtT > 0 ? '#ffffff' : '#8a5a2a';
+    ctx.fillRect(x, y + 6, c.w, c.h - 6);
+    ctx.fillStyle = '#c08850';
+    ctx.fillRect(x + 1, y + 7, c.w - 2, c.h - 8);
+    ctx.fillStyle = '#ffd84a';
+    ctx.fillRect(x, y + 9, c.w, 2);
+    // ふた
+    ctx.fillStyle = '#8a5a2a';
+    ctx.fillRect(x, y + lid, c.w, 7);
+    ctx.fillStyle = '#a06a34';
+    ctx.fillRect(x + 1, y + lid + 1, c.w - 2, 5);
+    ctx.fillStyle = '#ffd84a';
+    ctx.fillRect(x + c.w / 2 - 1, y + lid + 4, 3, 4);
+    if (c.mimic) {
+      // よく見ると歯がある
+      ctx.fillStyle = '#ffffff';
+      for (let i = 2; i < c.w - 2; i += 4) ctx.fillRect(x + i, y + 6, 2, bite ? 3 : 1);
+      if (bite) {
+        ctx.fillStyle = '#3a0010';
+        ctx.fillRect(x + 1, y + lid + 7, c.w - 2, 6 - lid);
+        ctx.fillStyle = '#ff3355';
+        ctx.fillRect(x + 4, y + 5, 3, 2);
+        ctx.fillRect(x + c.w - 7, y + 5, 3, 2);
+      }
+    }
+  };
+  R.drawPickup = function (ctx, p) {
+    const x = Math.round(p.x),
+      y = Math.round(p.y);
+    if (p.kind === 'helmet') {
+      ctx.fillStyle = '#ffd84a';
+      ctx.beginPath();
+      ctx.arc(x + 7, y + 10, 7, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(x - 1, y + 9, 16, 3);
+      ctx.fillStyle = '#c89a10';
+      ctx.fillRect(x + 6, y + 3, 2, 6);
+    }
+  };
+  const baseHazard2 = R.drawHazardBox;
+  R.drawHazardBox = function (ctx, h) {
+    if (h.kind === 'flowerbite') {
+      const x = Math.round(h.x),
+        y = Math.round(h.y);
+      const k = Math.min(1, h.t / 4);
+      const top = y + h.h - h.h * k;
+      ctx.fillStyle = '#2e7a2a';
+      ctx.fillRect(x + h.w / 2 - 1, top + 10, 3, h.h);
+      ctx.fillStyle = '#ff3a6a';
+      circle(ctx, x + h.w / 2, top + 6, 9);
+      ctx.fillStyle = '#ffffff';
+      for (let i = -6; i <= 4; i += 4) ctx.fillRect(x + h.w / 2 + i, top + 6, 2, 3);
+      ctx.fillStyle = '#3a0010';
+      ctx.fillRect(x + h.w / 2 - 6, top + 4, 12, 2);
+      return;
+    }
+    baseHazard2(ctx, h);
+  };
 })();

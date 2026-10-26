@@ -942,6 +942,12 @@
     const dy = g === 1 ? -2 : 0;
     if (W.playerBlink && Math.floor(W.time / 3) % 2) return;
     ctx.drawImage(img, P.x - 3, P.y + dy);
+    // 2-1 のヘルメット
+    if (W.vars.helmet) {
+      ctx.fillStyle = '#ffd84a';
+      ctx.fillRect(Math.round(P.x) - 2, Math.round(P.y) - 4, 12, 4);
+      ctx.fillRect(Math.round(P.x), Math.round(P.y) - 6, 8, 2);
+    }
   }
   function drawBullets(ctx, W) {
     for (const b of W.bullets) {

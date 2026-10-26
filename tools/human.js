@@ -60,6 +60,7 @@ const S = {
   '2-1': {
     from: 'S',
     steps: [
+      { jump: 'R', hold: 8 }, // ヘルメットは拾わない
       { go: 96 }, { wait: 40 }, { go: 180 }, // ドッスン①を落とさせて、上がり始めたらくぐる
       { go: 196 }, // ドッスン②は二度落ちるので戻るまで待つ（その間に後ろから来るリンゴを跳び越える）
       { until: (W, P) => W.ents.some((e) => e instanceof G.Fruit && e.cx < P.cx && e.cx > P.cx - 34), dir: 0 },
@@ -95,7 +96,7 @@ const S = {
   '3-1': {
     from: 'S',
     // シャンデリアは一歩踏み込んで先に落とさせる
-    steps: [{ go: 276 }, { jump: 'L', hold: 12, steerFrames: 30 }, { go: 234 }, { wait: 40 }, { go: 212 }, { jump: 'L', hold: 14 }, { go: 90 }, { until: (W, P) => W.ents.some((e) => e instanceof G.Spike && e.vx < 0 && e.x < P.cx + 70), dir: 0 }, { jump: 'L', hold: 16, dj: 28, djHold: 12 }, { go: -20 }], // 前から来るトゲは2段目で越える
+    steps: [{ go: 384 }, { shoot: 20 }, { wait: 10 }, { go: 276 }, { jump: 'L', hold: 12, steerFrames: 30 }, { go: 234 }, { wait: 40 }, { go: 212 }, { jump: 'L', hold: 14 }, { go: 90 }, { until: (W, P) => W.ents.some((e) => e instanceof G.Spike && e.vx < 0 && e.x < P.cx + 70), dir: 0 }, { jump: 'L', hold: 16, dj: 28, djHold: 12 }, { go: -20 }], // 前から来るトゲは2段目で越える
     goal: 'left',
   },
   '3-2': {
@@ -150,6 +151,18 @@ const S = {
       { go: 270 }, { jump: 0, hold: 16, dj: 18, djHold: 14 },
     ],
     goal: 'up',
+  },
+  // ひみつの部屋
+  '1-S': {
+    from: 'S',
+    steps: [
+      { go: 404 }, { shoot: 20 }, { wait: 10 }, // ミミックは撃って倒す
+      { jump: 'L', hold: 12 }, { go: 210 }, // 人食い花を跳び越えて、真ん中の宝箱を開ける
+      { wait: 30 }, { jump: 0, hold: 10 }, // ひみつのリンゴ
+      { go: 270 }, { wait: 60 }, // 降ってくるリンゴをよける
+      { go: 350 }, { jump: 'R', hold: 12 }, { go: 500 },
+    ],
+    check: (W) => W.game.flags.secret1,
   },
   // 6面
   '11-1': {
@@ -330,7 +343,8 @@ function run(id, script, rng, onEnd) {
   for (let i = 0; i < 120 && !r.deaths.length && !r.exited; i++) r.step({});
   const goal = script.goal || 'right';
   if (onEnd) onEnd(W);
-  return { ok: r.exited === goal, death: r.deaths[0] && r.deaths[0].cause, exit: r.exited, pos: [W.player.x, W.player.y] };
+  const okGoal = r.exited === goal && (!script.check || script.check(W));
+  return { ok: okGoal, death: r.deaths[0] && r.deaths[0].cause, exit: r.exited, pos: [W.player.x, W.player.y] };
 }
 
 module.exports = { run, S, G, STAR_SAFE };

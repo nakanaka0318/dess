@@ -4,7 +4,7 @@ const vm = require('vm');
 const fs = require('fs');
 const path = require('path');
 
-const CORE = ['util', 'world', 'entities', 'bosses', 'bosses2', 'bosses3', 'bosses4', 'rooms', 'rooms2', 'rooms3', 'rooms4', 'rooms5', 'game'];
+const CORE = ['util', 'world', 'entities', 'bosses', 'bosses2', 'bosses3', 'bosses4', 'rooms', 'rooms2', 'rooms3', 'rooms4', 'rooms5', 'extras', 'game'];
 
 function load() {
   const ctx = { console };
