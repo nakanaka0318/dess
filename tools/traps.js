@@ -109,6 +109,9 @@ const NAIVE = [
   // 寄り道・追加の罠（4面）
   { id: '9-1', name: '地球に見とれる', from: 'S', steps: [{ go: 86 }, { wait: 160 }], expect: /地球に見とれて/ },
   { id: '9-A3', name: '無敵モード', from: 'S', steps: [{ go: 200 }, { go: 190 }, { go: 196 }, { shoot: 4 }, { wait: 120 }], expect: /無敵モード/ },
+  // 寄り道・追加の罠（5面）
+  { id: '10-3', name: 'カラス', enter: { x: 346, y: 106 }, steps: [{ wait: 120 }], goal: 'up', expect: /カラス/ },
+  { id: '10-S', name: '屋根裏のネズミ', from: 'S', steps: [{ go: 500 }], expect: /ネズミ/ },
   // 6面
   { id: '11-1', name: '★1UP（機雷）', from: 'S', steps: [{ go: 500 }], expect: /機雷/ },
   { id: '11-1', name: '背景の星', from: 'S', steps: [{ go: 122 }, { jump: 'R', hold: 16 }, { go: 500 }], expect: /星は背景/ },

@@ -209,6 +209,21 @@ const S = {
     steps: [{ jump: 'L', hold: 16, dj: 22, djHold: 14, steerFrames: 40 }, { wait: 10 }, { go: 200 }], // うさぎの足場の左はしへ2段ジャンプ（真ん中に降りると餅）
     goal: 'warp:9-S',
   },
+  '10-4 屋根裏': {
+    room: '10-4',
+    from: 'E',
+    steps: [{ go: 272 }, { jump: 'R', hold: 6 }], // 風船につかまって、右の壁の上のすき間へ
+    goal: 'right',
+  },
+  '10-S': {
+    from: 'S',
+    steps: [
+      { go: 306 }, { until: (W, P) => W.ents.some((e) => e.alive && e.hazard && e.w === 12 && e.x < P.x + 30), dir: 0 }, { jump: 0, hold: 4 }, // ネズミは小ジャンプで
+      { go: 356 }, { go: -20 }, // ひみつのリンゴを取って、左のすき間から戻る
+    ],
+    goal: 'left',
+    check: (W) => W.game.flags.secret5,
+  },
   // 6面
   '11-1': {
     from: 'S',

@@ -784,4 +784,148 @@
     },
     { hint: '無敵モードのスイッチも撃たない方がいい。' }
   );
+
+  // =====================================================================
+  // STAGE 5：風船と、塔の屋根裏
+  // =====================================================================
+  // 新しい仕掛け：風船（さわるとつかまって上へ。ジャンプで手をはなす。popAt があると途中で割れる）
+  class Balloon extends Ent {
+    constructor(W, cx, cy, o) {
+      super(W, cx - 8, cy - 10, 16, 20);
+      this.dur = o.dur || 170;
+      this.popAt = o.popAt || 0;
+      this.color = o.color || '#ff5a7a';
+      this.layer = 3;
+      this.held = false;
+      this.baseY = this.y;
+    }
+    tick() {
+      const W = this.W,
+        P = W.player;
+      if (!this.held) {
+        this.y = this.baseY + Math.sin(this.t * 0.06) * 3;
+        if (P.alive && G.overlap(P, this)) {
+          this.held = true;
+          this.t0 = this.t;
+          G.sfx('boing');
+        }
+        return;
+      }
+      const k = this.t - this.t0;
+      const pop = this.popAt && k >= this.popAt;
+      if (!P.alive || P.vy < -1.6 || k > this.dur || pop) {
+        this.alive = false;
+        if (pop || k > this.dur) {
+          G.sfx('pop');
+          W.burst(this.cx, this.cy, 14, [this.color, '#ffffff'], 2, { g: 0.05, life: 20 });
+          W.say('パン！', this.cx, this.y - 4, 40, { plain: true, size: 11, color: '#ffffff' });
+        }
+        return;
+      }
+      P.vy = -1.25;
+      this.x = P.cx - 8;
+      this.y = P.y - 24;
+    }
+    draw(ctx) {
+      G.Render.drawBalloon(ctx, this);
+    }
+  }
+  G.Balloon = Balloon;
+  G.World.prototype.balloon = function (cx, cy, o) {
+    return this.add(new Balloon(this, cx, cy, o || {}));
+  };
+
+  // 10-4：入口の右の風船で、右の壁の上のすき間へ（屋根裏）
+  {
+    const d = R['10-4'];
+    d.map = d.map.map((row, i) => (i === 2 || i === 3 ? row.slice(0, 23) + '.' : row));
+  }
+  addTo('10-4', (W) => W.balloon(330, 196, {}), { exits: { right: '10-S' }, hint: '入口の右の風船につかまると、右の壁の上のすき間まで上がれる（寄り道）。' });
+
+  // 10-6：「らくらく上昇」の風船は途中で割れる
+  addTo('10-6', (W) => {
+    W.balloon(258, 196, { popAt: 60, color: '#7ad0ff' });
+    W.sign(13, 10, '← らくらく上昇\n（風船）', { range: 30 });
+  }, { hint: '「らくらく上昇」の風船は途中で割れる。' });
+
+  // 10-3：高い所に立つとカラスが飛んでくる
+  addTo(
+    '10-3',
+    (W) => {
+      const prev = W.onStep;
+      W.onStep = () => {
+        if (prev) prev();
+        const P = W.player;
+        if (W.vars.crow || !P.alive || !P.onGround || P.y + P.h > 140) return;
+        W.vars.crow = true;
+        W.say('カァ！', 450, P.cy - 14, 40, { plain: true, size: 11, color: '#ffffff' });
+        G.sfx('warn');
+        const y = P.cy;
+        W.after(30, () => {
+          const c = W.fruit(500, y, { kind: 'crow', r: 7, cause: 'カラスにつつかれた。塔の上はカラスの縄張り。' });
+          c.vel(-3, 0);
+          G.sfx('whoosh');
+        });
+      };
+    },
+    { hint: '高い足場に乗るとカラスが来る。通り過ぎるのを待とう。' }
+  );
+
+  // ネズミ
+  class Rat extends Ent {
+    constructor(W, x, y, dir) {
+      super(W, x, y, 12, 7);
+      this.hazard = true;
+      this.dir = dir;
+      this.layer = 2;
+      this.cause = 'ネズミにかじられた。屋根裏だから。';
+    }
+    tick() {
+      this.x += this.dir * 2.2;
+      if (this.x < -20 || this.x > 500) this.alive = false;
+    }
+    draw(ctx) {
+      G.Render.drawRat(ctx, this);
+    }
+  }
+
+  R['10-S'] = {
+    hint: '天井が低いので小さく跳ぶ。ネズミは小ジャンプで越える。「非常口」は塔のふもと行き。帰りは左のすき間から。',
+    area: 10,
+    name: '10-S 塔の屋根裏',
+    theme: 'sky',
+    bg: 'dusk',
+    exits: { left: '10-4' },
+    map: [
+      '########################',
+      '########################',
+      '.......................#',
+      '...S...................#',
+      '########################',
+      '########################',
+      '########################',
+      '########################',
+      '########################',
+      '########################',
+      '########################',
+      '########################',
+      '########################',
+      '########################',
+    ],
+    setup(W) {
+      W.sign(5, 3, '塔の屋根裏\n（天井が低い）', { range: 24 });
+      W.decor(170, 56, 'pot');
+      W.sign(10, 3, '前の挑戦者の忘れ物', { range: 24 });
+      W.decor(250, 52, 'crate');
+      W.door(22, 2, { to: '10-1', spawn: [3, 11], label: '非' });
+      W.sign(20, 3, '非常口\n（下まで一瞬）', { range: 20 });
+      W.secret(350, 70, 5);
+      // ひみつのリンゴに近づくと、ネズミ
+      W.trigPx(300, 0, 20, 280, () => {
+        W.add(new Rat(W, 480, 73, -1));
+        G.sfx('warn');
+        W.say('チュー', 440, 50, 40, { plain: true, size: 10, color: '#ffffff' });
+      }, { cond: (P) => P.onGround });
+    },
+  };
 })();

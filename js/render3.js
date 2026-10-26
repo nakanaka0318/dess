@@ -748,4 +748,53 @@
       ctx.fillRect(x + 58, y - 20, 2, 44);
     },
   });
+
+  // ---------------- 5面の寄り道 ----------------
+  R.drawBalloon = function (ctx, b) {
+    const cx = Math.round(b.cx),
+      y = Math.round(b.y);
+    ctx.strokeStyle = '#e8e8f0';
+    ctx.beginPath();
+    ctx.moveTo(cx, y + 18);
+    ctx.lineTo(cx + Math.sin(b.t * 0.1) * 2, y + 30);
+    ctx.stroke();
+    ctx.fillStyle = b.color;
+    ctx.beginPath();
+    ctx.ellipse(cx, y + 8, 7, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillRect(cx - 4, y + 2, 2, 4);
+    ctx.fillStyle = b.color;
+    ctx.fillRect(cx - 1, y + 16, 3, 2);
+  };
+  R.drawRat = function (ctx, r) {
+    const x = Math.round(r.x),
+      y = Math.round(r.y);
+    ctx.fillStyle = '#8a8a9a';
+    ctx.fillRect(x + 1, y + 1, 10, 6);
+    ctx.fillRect(x - 1, y + 2, 3, 3);
+    ctx.fillStyle = '#ffb0c0';
+    ctx.fillRect(x, y, 2, 2);
+    ctx.fillRect(x + 11, y + 4, 5, 1);
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(x + 1, y + 3, 1, 1);
+  };
+  const baseFruit2 = R.drawFruitKind;
+  R.drawFruitKind = function (ctx, f) {
+    if (f.kind === 'crow') {
+      const cx = Math.round(f.cx),
+        cy = Math.round(f.cy);
+      const up = Math.floor(f.W.time / 5) % 2;
+      ctx.fillStyle = '#1a1a24';
+      ctx.fillRect(cx - 6, cy - 2, 12, 5);
+      ctx.fillRect(cx - 9, cy - 1, 4, 3);
+      ctx.fillRect(cx - 2, cy + (up ? -7 : 2), 7, 5);
+      ctx.fillStyle = '#ffd84a';
+      ctx.fillRect(cx - 11, cy, 3, 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx - 7, cy - 1, 1, 1);
+      return true;
+    }
+    return baseFruit2 ? baseFruit2(ctx, f) : false;
+  };
 })();
