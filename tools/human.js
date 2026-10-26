@@ -224,6 +224,22 @@ const S = {
     goal: 'left',
     check: (W) => W.game.flags.secret5,
   },
+  '12-2 通気口': {
+    room: '12-2',
+    enter: { x: 240, y: 186 },
+    steps: [{ jump: 'R', hold: 16, dj: 20, djHold: 14 }, { go: 352 }], // 安全な足場から、宇宙人の足場の通気口へ
+    goal: 'warp:12-S',
+  },
+  '12-S': {
+    from: 'S',
+    steps: [
+      { go: 250 }, { jump: 'R', hold: 14 }, // ☾の「本物」のリンゴは跳び越える
+      { go: 445 }, // 本物のひみつのリンゴ
+      { go: 296 }, { jump: 'L', hold: 14 }, { go: 20 }, // 帰りも跳び越えて、通気口へ
+    ],
+    goal: 'warp:12-2',
+    check: (W) => W.game.flags.secret6,
+  },
   // 6面
   '11-1': {
     from: 'S',

@@ -928,4 +928,120 @@
       }, { cond: (P) => P.onGround });
     },
   };
+
+  // =====================================================================
+  // STAGE 6：酸素メーターと、月の秘密基地
+  // =====================================================================
+  // 新しい仕掛け：酸素メーター（空気のない部屋。ボンベで回復、0になると死ぬ）
+  function oxygen(W, frames) {
+    W.vars.o2 = 1;
+    W.vars.o2Rate = 1 / frames;
+    const prev = W.onStep;
+    W.onStep = () => {
+      if (prev) prev();
+      const P = W.player;
+      if (!P.alive || W.vars.o2 == null) return;
+      W.vars.o2 = Math.max(0, W.vars.o2 - W.vars.o2Rate);
+      if (W.vars.o2 < 0.3 && W.time % 30 === 0) G.sfx('warn');
+      if (W.vars.o2 <= 0) W.kill('酸素が切れた。秘密基地に空気はなかった。');
+    };
+  }
+  G.oxygen = oxygen;
+  const o2Tank = (W, cx, cy) =>
+    W.add(
+      new Pickup(W, cx, cy, 'o2', () => {
+        W.vars.o2 = 1;
+        G.sfx('save');
+        W.say('酸素 満タン', cx, cy - 12, 40, { plain: true, size: 9, color: '#9ae8ff' });
+      })
+    );
+
+  // 12-2：宇宙人の足場に通気口（秘密基地へ）。宇宙人はさわるとシビれる（本当にそう言っている）
+  addTo(
+    '12-2',
+    (W) => {
+      W.door(17, 4, { to: '12-S', spawn: [2, 11], label: '通' });
+      const al = W.ents.find((e) => e instanceof G.Npc && e.kind === 'alien');
+      if (al) {
+        al.x = 392 - al.r;
+        al.baseY = al.y;
+        al.hazard = true;
+        al.cause = 'ほんとうにシビれた。（宇宙人はウソをつかない）';
+        W.trigPx(300, 0, 16, 120, () => W.say('サワルト、シビレルヨ。', 0, 0, 90, { follow: al, dy: -4 }));
+      }
+    },
+    { hint: '宇宙人にさわるとシビれる（本当）。宇宙人の足場の通気口は寄り道。' }
+  );
+
+  R['12-S'] = {
+    hint: '酸素はボンベで回復。日記を読みすぎない。「本物」と書いた☾の看板のリンゴは偽物。本物は奥。',
+    area: 12,
+    name: '12-S 月の秘密基地',
+    theme: 'station',
+    bg: 'deduce',
+    exits: {},
+    goal: 'flag',
+    map: [
+      '########################',
+      '########################',
+      '########################',
+      '########################',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#...S..................#',
+      '########################',
+      '########################',
+    ],
+    setup(W) {
+      oxygen(W, 360);
+      W.door(1, 10, { to: '12-2', spawn: [17, 11], label: '↩' });
+      W.sign(6, 11, '月の日記①\nきょうもプレイヤーが\nリンゴで死んだ。たのしい。', { range: 22 });
+      W.sign(9, 11, '月の日記②\nセーブポイントくんと\n作戦会議。', { range: 22 });
+      W.sign(15, 11, '月の日記③\nばれそうになったら\n太陽のせいにしよう。', { range: 22 });
+      o2Tank(W, 230, 228);
+      o2Tank(W, 360, 228);
+      // ニセのひみつのリンゴ（☾の署名）
+      W.sign(12, 11, 'ひみつのリンゴ\n（本物）' + '\n　　　　☾', { range: 22 });
+      const fakeA = W.fruit(274, 230, { kind: 'gold', r: 6, keep: true, cause: 'ニセのひみつのリンゴ。署名を見ればわかったのに。' });
+      fakeA.hazard = false;
+      W.trigPx(268, 220, 14, 20, () => {
+        fakeA.alive = false;
+        W.burst(274, 230, 50, ['#ff5a10', '#ffd84a', '#ffffff'], 3.5, { g: 0.1 });
+        G.sfx('explode');
+        W.kill('ニセのひみつのリンゴ。署名を見ればわかったのに。');
+      });
+      W.secret(440, 226, 6);
+      W.sign(20, 11, '（ここには何もない）', { range: 20 });
+    },
+    drawUI(ctx, W, UI) {
+      if (W.vars.o2 != null) G.Render.drawO2(ctx, W.vars.o2, UI);
+    },
+  };
+
+  // 12-3：管制室のコーヒー（撃つとこぼれて床に電気）
+  addTo(
+    '12-3',
+    (W) => {
+      W.sign(5, 11, '管制官のコーヒー\n（撃たないでね）', { range: 24 });
+      const cup = W.add(new Pickup(W, 130, 232, 'coffee', () => {}));
+      cup.shootable = true;
+      cup.tick = () => {};
+      cup.onShot = () => {
+        cup.alive = false;
+        G.sfx('splat');
+        W.say('バチバチッ', 160, 200, 50, { plain: true, size: 11, color: '#9ae8ff' });
+        W.after(12, () => {
+          W.hbox(0, 230, 300, 10, { kind: 'zap', life: 40, cause: '管制室でコーヒーをこぼしてはいけない。' });
+          G.sfx('laser');
+        });
+        return true;
+      };
+    },
+    { hint: 'コーヒーは撃たない。' }
+  );
 })();

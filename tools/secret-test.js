@@ -11,12 +11,12 @@ const flagsOf = (W) => (W.game && W.game.flags) || {};
 
 // 入口
 ok(run('1-1', { from: '@', steps: [{ go: -20 }], goal: 'left' }).ok, '1面：はじまりの部屋を左へ → 1-S');
-for (const key of ['5-3 王の墓', '7-1 ワームホール', '9-1 餅屋', '10-4 屋根裏']) {
+for (const key of ['5-3 王の墓', '7-1 ワームホール', '9-1 餅屋', '10-4 屋根裏', '12-2 通気口']) {
   const r = run(S[key].room, S[key], null);
   ok(r.ok, `入口 ${key} → ${r.exit || r.death}`);
 }
 // ひみつのリンゴ
-for (const [id, n] of [['1-S', 1], ['5-S', 2], ['8-S', 3], ['10-S', 5]]) {
+for (const [id, n] of [['1-S', 1], ['5-S', 2], ['8-S', 3], ['10-S', 5], ['12-S', 6]]) {
   let f = {};
   const r = run(id, S[id], null, (W) => (f = flagsOf(W)));
   ok(r.ok && f['secret' + n], `${id}: ひみつのリンゴ ${n} を取って戻れる (${r.exit || r.death})`);

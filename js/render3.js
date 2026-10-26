@@ -797,4 +797,51 @@
     }
     return baseFruit2 ? baseFruit2(ctx, f) : false;
   };
+
+  // ---------------- 6面の寄り道 ----------------
+  R.drawO2 = function (ctx, o2, UI) {
+    const x = SW / 2 - 60,
+      y = 22;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(x - 2, y - 2, 124, 10);
+    ctx.fillStyle = o2 < 0.3 ? (Math.floor(Date.now() / 150) % 2 ? '#ff3a5a' : '#ff9aaa') : '#5ad8ff';
+    ctx.fillRect(x, y, Math.round(120 * o2), 6);
+    UI.textOut(ctx, '酸素', x - 16, y + 3, 9, '#9ae8ff', 'center');
+  };
+  const basePickup3 = R.drawPickup;
+  R.drawPickup = function (ctx, p) {
+    const x = Math.round(p.x),
+      y = Math.round(p.y);
+    if (p.kind === 'o2') {
+      ctx.fillStyle = '#5ad8ff';
+      ctx.fillRect(x + 3, y, 8, 14);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 5, y - 2, 4, 3);
+      ctx.fillRect(x + 4, y + 4, 2, 6);
+      G.SPR.tiny(ctx, 'O2', x + 1, y - 9, '#9ae8ff', 1);
+      return;
+    }
+    if (p.kind === 'coffee') {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 3, y + 5, 8, 9);
+      ctx.fillRect(x + 11, y + 7, 2, 4);
+      ctx.fillStyle = '#5a3418';
+      ctx.fillRect(x + 4, y + 6, 6, 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillRect(x + 5, y + 1 - (Math.floor(p.W.time / 10) % 2), 1, 3);
+      return;
+    }
+    basePickup3(ctx, p);
+  };
+  const baseHazard4 = R.drawHazardBox;
+  R.drawHazardBox = function (ctx, h) {
+    if (h.kind === 'zap') {
+      ctx.strokeStyle = h.t % 4 < 2 ? '#9ae8ff' : '#ffffff';
+      ctx.beginPath();
+      for (let x = h.x; x <= h.x + h.w; x += 6) ctx.lineTo(x, h.y + 4 + ((x * 7 + h.t * 3) % 8) - 4);
+      ctx.stroke();
+      return;
+    }
+    baseHazard4(ctx, h);
+  };
 })();

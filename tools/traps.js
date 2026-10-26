@@ -112,6 +112,11 @@ const NAIVE = [
   // 寄り道・追加の罠（5面）
   { id: '10-3', name: 'カラス', enter: { x: 346, y: 106 }, steps: [{ wait: 120 }], goal: 'up', expect: /カラス/ },
   { id: '10-S', name: '屋根裏のネズミ', from: 'S', steps: [{ go: 500 }], expect: /ネズミ/ },
+  // 寄り道・追加の罠（6面）
+  { id: '12-S', name: 'ニセのひみつのリンゴ', from: 'S', steps: [{ go: 500 }], expect: /ニセのひみつのリンゴ/ },
+  { id: '12-S', name: '日記を読みすぎ', from: 'S', steps: [{ go: 180 }, { wait: 400 }], expect: /酸素/ },
+  { id: '12-3', name: '管制官のコーヒー', from: 'S', steps: [{ go: 90 }, { shoot: 4 }, { wait: 60 }], expect: /コーヒー/ },
+  { id: '12-2', name: '宇宙人と握手', enter: { x: 362, y: 106 }, steps: [{ go: 500 }], expect: /シビれた/ },
   // 6面
   { id: '11-1', name: '★1UP（機雷）', from: 'S', steps: [{ go: 500 }], expect: /機雷/ },
   { id: '11-1', name: '背景の星', from: 'S', steps: [{ go: 122 }, { jump: 'R', hold: 16 }, { go: 500 }], expect: /星は背景/ },
