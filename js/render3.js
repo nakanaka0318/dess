@@ -547,4 +547,96 @@
     }
     baseHazard2(ctx, h);
   };
+
+  // ---------------- 2面の寄り道 ----------------
+  R.drawQuickSand = function (ctx, q) {
+    const x = Math.round(q.x),
+      y = Math.round(q.y);
+    const t = q.W.time;
+    ctx.fillStyle = '#c8944a';
+    ctx.fillRect(x, y, q.w, q.h);
+    ctx.fillStyle = '#e0b06a';
+    for (let i = 0; i < q.w; i += 6) ctx.fillRect(x + i, y + ((i + Math.floor(t / 8)) % 3), 4, 1);
+    ctx.fillStyle = '#a87a38';
+    for (let i = 0; i < 10; i++) {
+      const px = x + ((i * 37 + Math.floor(t * 0.3)) % q.w),
+        py = y + 6 + ((i * 13) % (q.h - 8));
+      ctx.fillRect(px, py, 2, 1);
+    }
+    // 渦
+    ctx.strokeStyle = 'rgba(120,80,30,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(x + q.w / 2, y + 4, q.w / 4 + Math.sin(t * 0.05) * 3, 2, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  };
+  R.drawScarab = function (ctx, s) {
+    const cx = Math.round(s.cx),
+      cy = Math.round(s.cy);
+    ctx.fillStyle = s.lit ? '#5ad8ff' : '#2a6a8a';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 5, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = s.lit ? '#ffffff' : '#5aa0c0';
+    ctx.fillRect(cx - 1, cy - 6, 2, 12);
+    ctx.fillRect(cx - 7, cy - 2, 3, 1);
+    ctx.fillRect(cx + 4, cy - 2, 3, 1);
+    ctx.fillRect(cx - 7, cy + 2, 3, 1);
+    ctx.fillRect(cx + 4, cy + 2, 3, 1);
+  };
+  R.drawTablet = function (ctx, t) {
+    const x = Math.round(t.x),
+      y = Math.round(t.y);
+    ctx.fillStyle = '#6a5a3a';
+    ctx.fillRect(x, y, t.w, t.h);
+    ctx.fillStyle = '#a89068';
+    ctx.fillRect(x + 1, y + 1, t.w - 2, t.h - 2);
+    ctx.fillStyle = '#6a5a3a';
+    for (let i = 5; i < t.h - 3; i += 4) ctx.fillRect(x + 4, y + i, t.w - 8, 1);
+  };
+  Object.assign(G.DECOR, {
+    sphinx(ctx, d, x, y, t) {
+      ctx.fillStyle = '#b08a50';
+      ctx.fillRect(x - 60, y + 40, 150, 40);
+      ctx.fillRect(x - 10, y, 60, 60);
+      ctx.fillStyle = '#d8b070';
+      ctx.fillRect(x - 6, y + 4, 52, 40);
+      // 頭巾
+      ctx.fillStyle = '#4a6ac8';
+      ctx.fillRect(x - 14, y - 6, 68, 10);
+      ctx.fillRect(x - 14, y + 4, 8, 40);
+      ctx.fillRect(x + 46, y + 4, 8, 40);
+      ctx.fillStyle = '#ffd84a';
+      for (let i = 0; i < 68; i += 8) ctx.fillRect(x - 14 + i, y - 6, 4, 10);
+      // 顔
+      ctx.fillStyle = '#3a2410';
+      ctx.fillRect(x + 6, y + 18, 8, 3);
+      ctx.fillRect(x + 26, y + 18, 8, 3);
+      ctx.fillRect(x + 12, y + 34, 16, 2);
+      const blink = Math.floor(t / 90) % 6 === 0;
+      if (!blink) {
+        ctx.fillStyle = '#ff3040';
+        ctx.fillRect(x + 9, y + 18, 2, 2);
+        ctx.fillRect(x + 29, y + 18, 2, 2);
+      }
+    },
+  });
+  const baseHazard3 = R.drawHazardBox;
+  R.drawHazardBox = function (ctx, h) {
+    if (h.kind === 'curse') {
+      const x = Math.round(h.x),
+        y = Math.round(h.y);
+      ctx.fillStyle = '#5a4220';
+      ctx.fillRect(x, -10, h.w, y + h.h - 10 + 10);
+      ctx.fillStyle = '#e8e0d0';
+      for (let i = 0; i < h.w; i += 10) {
+        ctx.beginPath();
+        ctx.moveTo(x + i, y + h.h - 10);
+        ctx.lineTo(x + i + 10, y + h.h - 10);
+        ctx.lineTo(x + i + 5, y + h.h);
+        ctx.fill();
+      }
+      return;
+    }
+    baseHazard3(ctx, h);
+  };
 })();

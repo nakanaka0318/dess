@@ -271,4 +271,190 @@
   addTo('1-4', (W) => {
     W.sign(9, 11, 'はじまりの部屋の左には\nなにもない（ほんとう）', { range: 24 });
   });
+
+  // =====================================================================
+  // STAGE 2：流砂と、スフィンクスの間
+  // =====================================================================
+  // 新しい仕掛け：流砂（ゆっくり沈む。連打で這い上がれるが、足が重い）
+  class QuickSand extends Ent {
+    constructor(W, x, y, w, h) {
+      super(W, x, y, w, h);
+      this.layer = 5;
+    }
+    tick() {
+      const P = this.W.player;
+      if (!P.alive) return;
+      const inside = P.x + P.w > this.x && P.x < this.x + this.w && P.y + P.h > this.y + 2 && P.y < this.y + this.h;
+      if (!inside) return;
+      if (P.vy > 0.45) P.vy = 0.45;
+      if (P.vy < -3.4) P.vy = -3.4;
+      P.coyote = 3;
+      if (P.vx) P.moveX(-P.vx * 0.5);
+      if (this.t % 12 === 0) this.W.dust(P.cx, this.y, 2);
+    }
+    draw(ctx) {
+      G.Render.drawQuickSand(ctx, this);
+    }
+  }
+  G.QuickSand = QuickSand;
+  G.World.prototype.quicksand = function (x, y, w, h) {
+    return this.add(new QuickSand(this, x, y, w, h));
+  };
+  const inSand = (W) => W.ents.some((e) => e instanceof QuickSand && W.player.cx > e.x && W.player.cx < e.x + e.w && W.player.y + W.player.h > e.y);
+
+  addTo(
+    '5-1',
+    (W) => {
+      W.quicksand(140, 238, 40, 30);
+      const sg = W.ents.find((e) => e instanceof G.Sign && /ようこそ 2面へ/.test(e.text));
+      if (sg) sg.text += '\n（最初の穴は流砂。落ちたらジャンプ連打）';
+    },
+    { hint: '最初の穴は流砂。落ちてもジャンプ連打で這い上がれる。', cause: (W) => (inSand(W) ? '流砂に飲まれた。' : null) }
+  );
+
+  // スカラベ（撃つと隠し扉が開く）
+  class Scarab extends Ent {
+    constructor(W, cx, cy, onHit) {
+      super(W, cx - 6, cy - 6, 12, 12);
+      this.shootable = true;
+      this.onHit = onHit;
+      this.layer = -0.5;
+      this.lit = false;
+    }
+    shotBox() {
+      return { x: this.x - 3, y: this.y - 4, w: this.w + 6, h: this.h + 8 };
+    }
+    onShot() {
+      if (!this.lit) {
+        this.lit = true;
+        G.sfx('switch');
+        this.W.burst(this.cx, this.cy, 16, ['#5ad8ff', '#ffffff'], 2, { g: 0, life: 24 });
+        if (this.onHit) this.onHit();
+      }
+      return true;
+    }
+    draw(ctx) {
+      G.Render.drawScarab(ctx, this);
+    }
+  }
+
+  // 5-3：壁の高いところのスカラベを撃つと、王の墓の扉が開く
+  addTo('5-3', (W) => {
+    const opened = W.game && W.game.flags.tombOpen;
+    const door = W.door(1, 10, { to: '5-S', spawn: [3, 11], label: '王', open: !!opened });
+    W.add(
+      new Scarab(W, 200, 146, () => {
+        door.open = true;
+        if (W.game) W.game.flags.tombOpen = true;
+        W.say('ゴゴゴ……（左の扉が開いた）', 120, 170, 90, { plain: true, size: 10, color: '#9ae8ff' });
+        G.sfx('rumble');
+      })
+    );
+    if (opened) W.ents.filter((e) => e instanceof Scarab).forEach((e) => (e.lit = true));
+  });
+
+  // なぞなぞの石板
+  class Tablet extends Ent {
+    constructor(W, cx, cy, label, onHit) {
+      super(W, cx - 9, cy - 11, 18, 22);
+      this.shootable = true;
+      this.label = label;
+      this.onHit = onHit;
+      this.layer = 0;
+      W.text(cx, cy - 18, label, { size: 9, color: '#ffe9a8' });
+    }
+    onShot() {
+      if (this.onHit) this.onHit(this);
+      return true;
+    }
+    draw(ctx) {
+      G.Render.drawTablet(ctx, this);
+    }
+  }
+
+  R['5-S'] = {
+    hint: '答えは「人間」（真ん中の高さの石板を跳びながら撃つ）。流砂はジャンプ連打で渡る。リンゴを取ると天井が下りてくるので、すぐ左の扉へ戻る。',
+    area: 5,
+    name: '5-S スフィンクスの間',
+    theme: 'temple',
+    bg: 'temple',
+    exits: {},
+    goal: 'flag',
+    map: [
+      '########################',
+      '########################',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#..S...................#',
+      '##########......########',
+      '##########^^^^^^########',
+    ],
+    spikeCauseFn: () => '流砂に飲まれた。',
+    setup(W) {
+      const game = W.game;
+      W.door(1, 10, { to: '5-3', spawn: [3, 11], label: '↩' });
+      W.decor(40, 150, 'torch');
+      W.decor(440, 150, 'torch');
+      W.decor(300, 60, 'sphinx');
+      W.quicksand(200, 238, 120, 34);
+      const solved = game && game.flags.riddleSolved;
+      const gate = W.block(9, 9, 1, 3, { style: 'gate', keep: true });
+      if (solved) gate.alive = false;
+      else {
+        W.sign(5, 11, 'スフィンクス「朝は4本、昼は2本、\n夜は3本の足で歩くものは？\n答えの石板を撃て」', { range: 30 });
+        const answer = (t) => {
+          if (W.vars.answered) return;
+          W.vars.answered = true;
+          if (t.label === '人間') {
+            G.sfx('fanfare');
+            W.say('正解。……つまらない。', 300, 70, 90, {});
+            if (game) game.flags.riddleSolved = true;
+            gate.tweenTo(gate.x, gate.y - 70, 40, 'inOutQuad', () => gate.kill());
+            return;
+          }
+          G.sfx('trap');
+          W.say(t.label === 'イヌ' ? '犬は朝も夜も4本だ。' : 'イスは歩かない。', 300, 70, 70, {});
+          W.after(50, () => {
+            W.laser(W.player.cx - 14, 0, 28, 240, { warn: 6, dur: 30, cause: '不正解。スフィンクスに食べられた。', color: '#ffd84a' });
+            G.sfx('charge');
+          });
+        };
+        W.add(new Tablet(W, 150, 230, 'イヌ', answer));
+        W.add(new Tablet(W, 166, 186, '人間', answer));
+        W.add(new Tablet(W, 150, 146, 'イス', answer));
+      }
+      // ひみつのリンゴと、ファラオの呪い
+      const a = W.secret(400, 230, 2);
+      if (a)
+        a.onGet = () => {
+          W.say('呪いだ……ファラオの呪いだ……！', 240, 100, 120, { plain: true, size: 12, color: '#ff9aaa' });
+          G.sfx('rumble');
+          const c = W.hbox(20, -30, 440, 30, { kind: 'curse', cause: 'ファラオの呪いだ……！' });
+          c.offscreenKill = false;
+          c.vel(0, 0.45);
+        };
+    },
+  };
+
+  // 6-3：お供え物（ご自由にどうぞ）
+  addTo('6-3', (W) => {
+    const f = W.fruit(70, 232, { kind: 'gold', r: 6, keep: true });
+    f.hazard = false;
+    W.sign(5, 11, 'お供え物\n（ご自由にどうぞ）', { range: 24 });
+    W.trigPx(62, 220, 16, 20, () => {
+      f.alive = false;
+      W.say('……。', 200, 70, 40, { plain: true, size: 12, color: '#ffd84a' });
+      W.after(10, () => {
+        W.laser(W.player.cx - 12, 0, 24, 240, { warn: 14, dur: 24, cause: 'お供え物は、神様のもの。', color: '#ffd84a' });
+        G.sfx('charge');
+      });
+    });
+  });
 })();

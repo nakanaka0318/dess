@@ -164,6 +164,27 @@ const S = {
     ],
     check: (W) => W.game.flags.secret1,
   },
+  '5-3 王の墓': {
+    room: '5-3',
+    from: 'S',
+    steps: [
+      { go: 92 }, { jump: 0, hold: 16, dj: 20, djHold: 14, fire: true, fireFrom: 26 }, // 2段ジャンプで壁のスカラベを撃つ
+      { wait: 20 }, { go: -20 },
+    ],
+    goal: 'warp:5-S',
+  },
+  '5-S': {
+    from: 'S',
+    steps: [
+      { go: 100 }, { jump: 0, hold: 16, fire: true, fireFrom: 12, fireTo: 34 }, // 真ん中の高さの「人間」を撃つ（セーブポイントの上では撃たない）
+      { wait: 50 }, { go: 192 },
+      { mash: 'R', until: (W, P) => P.cx > 340 }, // 流砂を渡る
+      { go: 404 }, // ひみつのリンゴ（呪いが始まる）
+      { go: 328 }, { mash: 'L', until: (W, P) => P.cx < 180 }, { go: -20 },
+    ],
+    goal: 'warp:5-3',
+    check: (W) => W.game.flags.secret2,
+  },
   // 6面
   '11-1': {
     from: 'S',
@@ -325,14 +346,22 @@ function run(id, script, rng, onEnd) {
         const inp = { left: steer === 'L' && on, right: steer === 'R' && on };
         if (f < hold) inp.jump = true;
         if (dj && f >= dj && f < dj + djHold) inp.jump = true;
+        if (st.fire && f >= (st.fireFrom || 0) && f < (st.fireTo || 999)) inp.shoot = f % 2 === 0;
         if (f === dj) inp.jump = false; // 押し直し
         if (step(inp)) break;
         f++;
         if (!P.onGround) left = true;
         if (left && P.onGround && f > 4) break;
       }
-    } else if (st.until) {
+    } else if (st.until && !st.mash) {
       while (!st.until(W, W.player) && guard++ < 900) if (step({ left: st.dir === 'L', right: st.dir === 'R' })) break;
+    } else if (st.mash) {
+      // 流砂：方向を押しながらジャンプ連打
+      let f = 0;
+      while (!st.until(W, W.player) && guard++ < 900) {
+        if (step({ left: st.mash === 'L', right: st.mash === 'R', jump: f % 10 < 6 })) break;
+        f++;
+      }
     } else if (st.shoot) {
       for (let i = 0; i < st.shoot; i++) if (step({ shoot: i % 2 === 0 })) break;
     }
@@ -352,20 +381,21 @@ if (require.main !== module) return;
 
 const only = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 let bad = 0;
-for (const id of Object.keys(S)) {
-  if (only.length && !only.includes(id)) continue;
-  const base = run(id, S[id], null);
+for (const key of Object.keys(S)) {
+  if (only.length && !only.includes(key) && !only.includes(S[key].room)) continue;
+  const id = S[key].room || key;
+  const base = run(id, S[key], null);
   const rng = new G.RNG(99);
   let ok = 0;
   const causes = {};
   const N = 40;
   for (let i = 0; i < N; i++) {
-    const r = run(id, S[id], rng);
+    const r = run(id, S[key], rng);
     if (r.ok) ok++;
     else causes[r.death || r.exit || 'stuck'] = (causes[r.death || r.exit || 'stuck'] || 0) + 1;
   }
   const pct = Math.round((ok / N) * 100);
   if (!base.ok || pct < 70) bad++;
-  console.log(`${id}: 基準手順 ${base.ok ? 'OK' : 'NG(' + (base.death || base.exit || 'stuck@' + base.pos) + ')'}  揺らし成功率 ${pct}%  ${Object.entries(causes).map(([k, v]) => k + '×' + v).join(' / ')}`);
+  console.log(`${key}: 基準手順 ${base.ok ? 'OK' : 'NG(' + (base.death || base.exit || 'stuck@' + base.pos) + ')'}  揺らし成功率 ${pct}%  ${Object.entries(causes).map(([k, v]) => k + '×' + v).join(' / ')}`);
 }
 process.exit(bad ? 1 : 0);
