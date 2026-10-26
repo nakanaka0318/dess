@@ -219,6 +219,7 @@
       G.Render.drawUfo(ctx, this);
     }
   }
+  G.Ufo = Ufo;
 
   // 背景の惑星（遠いと思ったら近かった）
   class Planet extends Ent {

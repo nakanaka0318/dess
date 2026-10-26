@@ -328,6 +328,7 @@ function robustness(G, o, res, trials) {
         break;
       }
       if (res.goal === 'boss' && r.W.boss && r.W.boss.defeated) done = true;
+      if (res.goal === 'flag' && r.W.vars.goal) done = true;
     }
     if (done) ok++;
   }

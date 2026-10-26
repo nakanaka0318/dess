@@ -27,6 +27,12 @@ const CUSTOM = [
   // 6面（12-1 のエレベーターは human.js、推理の間は stage6-test.js と bosstest.js で検証）
   ['11-1', 'S', 'right', ['--shoot', 'action']], ['11-2', 'S', 'right', ['--max', '12000']], ['11-3', 'S', 'right'], ['11-4', 'S', 'right'],
   ['12-2', 'S', 'right', ['--shoot', 'action']], ['12-3', 'S', 'right'],
+  // 超高難易度エリア（3フレーム刻みで探索）
+  ...[
+    ['EX1-1', 'S', 'right'], ['EX1-2', 'left', 'flag'], ['EX2-1', 'S', 'right'], ['EX2-2', 'left', 'flag'],
+    ['EX3-1', 'S', 'right'], ['EX3-2', 'left', 'flag'], ['EX4-1', 'S', 'right', ['--shoot', 'action']], ['EX4-2', 'left', 'flag', ['--shoot', 'action']],
+    ['EX5-1', 'S', 'up'], ['EX5-2', 'S', 'flag'], ['EX6-1', 'S', 'right'], ['EX6-2', 'left', 'flag'],
+  ].map((c) => [c[0], c[1], c[2], ['--k', '3', '--max', '100000'].concat(c[3] || [])]),
 ];
 function buildCases(G) {
   const cases = CUSTOM.filter((c) => G.ROOMS[c[0]]).slice();

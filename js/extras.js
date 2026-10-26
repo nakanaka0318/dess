@@ -671,6 +671,7 @@
       G.Render.drawToggleSwitch(ctx, this);
     }
   }
+  G.ToggleSwitch = ToggleSwitch;
   G.World.prototype.toggles = function (list, color) {
     for (const [tx, ty] of list) this.add(new ToggleBlock(this, tx, ty, color));
   };

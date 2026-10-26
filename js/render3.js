@@ -844,4 +844,27 @@
     }
     baseHazard4(ctx, h);
   };
+
+  // ---------------- 極エリア ----------------
+  R.drawTriangle = function (ctx, t) {
+    const cx = Math.round(t.cx),
+      cy = Math.round(t.cy);
+    const k = t.W.time;
+    ctx.fillStyle = `rgba(255,224,64,${0.25 + Math.sin(k * 0.1) * 0.12})`;
+    circle(ctx, cx, cy, 13);
+    ctx.fillStyle = '#c89a10';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 9);
+    ctx.lineTo(cx + 9, cy + 7);
+    ctx.lineTo(cx - 9, cy + 7);
+    ctx.fill();
+    ctx.fillStyle = '#ffe040';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 6);
+    ctx.lineTo(cx + 6, cy + 5);
+    ctx.lineTo(cx - 6, cy + 5);
+    ctx.fill();
+    ctx.fillStyle = '#fff8c0';
+    ctx.fillRect(cx - 1, cy - 3, 2, 3);
+  };
 })();
