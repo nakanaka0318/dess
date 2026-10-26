@@ -203,6 +203,12 @@ const S = {
     goal: 'warp:7-1',
     check: (W) => W.game.flags.secret3,
   },
+  '9-1 餅屋': {
+    room: '9-1',
+    enter: { x: 266, y: 226 },
+    steps: [{ jump: 'L', hold: 16, dj: 22, djHold: 14, steerFrames: 40 }, { wait: 10 }, { go: 200 }], // うさぎの足場の左はしへ2段ジャンプ（真ん中に降りると餅）
+    goal: 'warp:9-S',
+  },
   // 6面
   '11-1': {
     from: 'S',

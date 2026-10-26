@@ -7,6 +7,7 @@
     SH = G.H;
   const hash2 = R.hash2;
   const circle = R.circle;
+  const T = G.T;
 
   Object.assign(G.THEMES, {
     galaxy: {
@@ -683,6 +684,68 @@
       ctx.fillRect(x + 1, y + 29, 26, 2);
       ctx.fillStyle = '#c8102e';
       for (let i = 0; i < 4; i++) circle(ctx, x + 5 + i * 6, y + 19, 3);
+    },
+  });
+
+  // ---------------- 4面の寄り道 ----------------
+  R.drawToggle = function (ctx, b) {
+    const x = Math.round(b.x),
+      y = Math.round(b.y);
+    const col = b.color === 'red' ? ['#ff4a6a', '#a01a3a', '#ffb0c0'] : ['#4a9aff', '#1a4aa0', '#b0d8ff'];
+    if (b.solid) {
+      ctx.fillStyle = col[1];
+      ctx.fillRect(x, y, T, T);
+      ctx.fillStyle = col[0];
+      ctx.fillRect(x + 1, y + 1, T - 2, T - 2);
+      ctx.fillStyle = col[2];
+      ctx.fillRect(x + 2, y + 2, T - 4, 2);
+    } else {
+      ctx.strokeStyle = col[0];
+      ctx.setLineDash([2, 2]);
+      ctx.strokeRect(x + 0.5, y + 0.5, T - 1, T - 1);
+      ctx.setLineDash([]);
+    }
+  };
+  R.drawToggleSwitch = function (ctx, s) {
+    const x = Math.round(s.x),
+      y = Math.round(s.y);
+    const red = (s.W.vars.tog || 0) === 0;
+    ctx.fillStyle = '#3a3e4a';
+    ctx.fillRect(x, y, s.w, s.h);
+    ctx.fillStyle = red ? '#ff4a6a' : '#4a9aff';
+    ctx.fillRect(x + 2, y + 2, s.w - 4, s.h - 4);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + s.w / 2 - 1, y + 3, 2, s.h - 6);
+  };
+  const basePickup2 = R.drawPickup;
+  R.drawPickup = function (ctx, p) {
+    if (p.kind === 'bell') {
+      const x = Math.round(p.x),
+        y = Math.round(p.y);
+      ctx.fillStyle = '#ffd84a';
+      ctx.beginPath();
+      ctx.arc(x + 7, y + 9, 6, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(x + 1, y + 9, 12, 3);
+      ctx.fillStyle = '#c89a10';
+      ctx.fillRect(x + 6, y + 1, 2, 3);
+      return;
+    }
+    basePickup2(ctx, p);
+  };
+  Object.assign(G.DECOR, {
+    shop(ctx, d, x, y) {
+      ctx.fillStyle = '#8a5a2a';
+      ctx.fillRect(x - 20, y + 24, 80, 20);
+      ctx.fillStyle = '#c08850';
+      ctx.fillRect(x - 18, y + 26, 76, 16);
+      ctx.fillStyle = '#ff6a8a';
+      for (let i = 0; i < 80; i += 10) ctx.fillRect(x - 20 + i, y - 30, 5, 10);
+      ctx.fillStyle = '#ffffff';
+      for (let i = 5; i < 80; i += 10) ctx.fillRect(x - 20 + i, y - 30, 5, 10);
+      ctx.fillStyle = '#5a3418';
+      ctx.fillRect(x - 20, y - 20, 2, 44);
+      ctx.fillRect(x + 58, y - 20, 2, 44);
     },
   });
 })();

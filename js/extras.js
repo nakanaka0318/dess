@@ -623,4 +623,165 @@
     },
     { hint: '懐中電灯は真ん中で電池が切れる。拾わないか、切れる前に覚えておこう。', cause: (W) => (W.vars.torchOut && W.time - W.vars.torchOut < 120 ? 'ちょうど電池が切れた。' : null) }
   );
+
+  // =====================================================================
+  // STAGE 4：赤青ブロックと、うさぎの餅屋
+  // =====================================================================
+  // 新しい仕掛け：赤青ブロック（スイッチを撃つたびに、固い色が入れかわる）
+  class ToggleBlock extends Ent {
+    constructor(W, tx, ty, color) {
+      super(W, tx * T, ty * T, T, T);
+      this.color = color;
+      this.layer = 0;
+      this.solid = false;
+      this.collidable = false;
+    }
+    tick() {
+      const W = this.W,
+        P = W.player;
+      const want = (W.vars.tog || 0) === (this.color === 'red' ? 0 : 1);
+      if (want && !this.solid) {
+        // プレイヤーと重なっている間は固くならない（埋まらないように）
+        if (P.alive && G.overlap(P, this)) return;
+        this.solid = this.collidable = true;
+      } else if (!want && this.solid) this.solid = this.collidable = false;
+    }
+    draw(ctx) {
+      G.Render.drawToggle(ctx, this);
+    }
+  }
+  class ToggleSwitch extends Ent {
+    constructor(W, tx, ty) {
+      super(W, tx * T + 3, ty * T + 3, T - 6, T - 6);
+      this.shootable = true;
+      this.layer = 1;
+      this.cd = 0;
+    }
+    tick() {
+      if (this.cd > 0) this.cd--;
+    }
+    onShot() {
+      if (this.cd) return true;
+      this.cd = 12;
+      this.W.vars.tog = 1 - (this.W.vars.tog || 0);
+      G.sfx('switch');
+      return true;
+    }
+    draw(ctx) {
+      G.Render.drawToggleSwitch(ctx, this);
+    }
+  }
+  G.World.prototype.toggles = function (list, color) {
+    for (const [tx, ty] of list) this.add(new ToggleBlock(this, tx, ty, color));
+  };
+
+  // 9-1：うさぎの足場の上に、餅屋の扉
+  addTo('9-1', (W) => {
+    W.door(10, 6, { to: '9-S', spawn: [2, 11], label: '餅' });
+    // 地球に見とれていると、人工衛星が落ちてくる
+    let look = 0;
+    const prev = W.onStep;
+    W.onStep = () => {
+      if (prev) prev();
+      const P = W.player;
+      if (look < 0 || !P.alive) return;
+      look = P.onGround && !P.vx && Math.abs(P.cx - 90) < 30 ? look + 1 : 0;
+      if (look > 100) {
+        look = -1;
+        const s = W.fruit(P.cx, -14, { kind: 'rock', r: 8, cause: '地球に見とれていた。人工衛星が落ちてきた。' });
+        s.vel(0, 5, 0, 0.3);
+        G.sfx('whoosh');
+      }
+    };
+  }, { hint: '看板の前で地球に見とれていると人工衛星が落ちてくる。' });
+
+  R['9-S'] = {
+    hint: 'スイッチを1回撃つと赤い壁が消えて青い床が出る。床の上でもう1回撃つと落ちる。ひみつのリンゴの代金は1デス（死んでも手に入る）。',
+    area: 9,
+    name: '9-S うさぎの餅屋',
+    theme: 'moon',
+    bg: 'farside',
+    exits: {},
+    goal: 'flag',
+    map: [
+      '########################',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#...S..................#',
+      '############....########',
+      '############^^^^########',
+    ],
+    spikeCauseFn: (W) => (W.vars.togFlips > 1 ? 'スイッチは2回撃つと元に戻る。' : '青い床は、まだなかった。'),
+    setup(W) {
+      W.door(1, 10, { to: '9-1', spawn: [11, 7], label: '↩' });
+      W.sign(6, 11, 'うさぎの餅屋\n（スイッチを撃って\nお入りください）', { range: 26 });
+      W.vars.tog = 0;
+      W.vars.togFlips = 0;
+      const sw = W.add(new ToggleSwitch(W, 8, 11));
+      const base = sw.onShot.bind(sw);
+      sw.onShot = (b) => {
+        if (!sw.cd) W.vars.togFlips++;
+        return base(b);
+      };
+      W.toggles([[10, 9], [10, 10], [10, 11]], 'red');
+      W.toggles([[12, 12], [13, 12], [14, 12], [15, 12]], 'blue');
+      W.decor(400, 196, 'shop');
+      W.decor(424, 210, 'rabbit');
+      const got = W.game && W.game.flags.secret4;
+      W.sign(18, 11, got ? 'まいどあり！' : 'ひみつのリンゴ\n1こ　1デス\n（ベルをさわってね）', { range: 26 });
+      if (!got) {
+        // 売り物（さわっても取れない。ベルでお支払い）
+        const apple = W.secret(440, 176, 4);
+        if (apple) {
+          apple.layer = 1;
+          apple.tick = function () {
+            this.y = this.baseY + Math.sin(this.t * 0.08) * 2;
+          };
+        }
+        // ベル：さわると「お支払い」
+        W.add(
+          new Pickup(W, 400, 232, 'bell', () => {
+            if (W.game) {
+              W.game.flags.secret4 = true;
+              if (W.game.writePersist) W.game.writePersist();
+            }
+            if (apple) apple.alive = false;
+            G.sfx('fanfare');
+            W.say(`まいど！ ひみつのリンゴ（${W.game ? G.secretCount(W.game.flags) : 1}/${G.SECRETS}）`, 400, 150, 90, { plain: true, size: 11, color: '#fff2a8' });
+            W.after(40, () => W.kill('代金を支払った。（1デス）'));
+          })
+        );
+      }
+    },
+  };
+
+  // 9-A3 開発室：無敵モードのスイッチ
+  addTo(
+    '9-A3',
+    (W) => {
+      W.sign(14, 11, '無敵モード\n（撃つとON）', { range: 20 });
+      const sw = W.add(new ToggleSwitch(W, 15, 11));
+      sw.onShot = () => {
+        if (sw.used) return true;
+        sw.used = true;
+        G.sfx('fanfare');
+        W.text(240, 110, '無敵モード ON', { size: 18, color: '#9affc0' });
+        W.after(60, () => {
+          const r = W.rock(W.player.cx, -30, { r: 16, cause: '無敵モードはウソだった。開発室なので。' });
+          r.vel(0, 4, 0, 0.4);
+          G.sfx('whoosh');
+        });
+        return true;
+      };
+    },
+    { hint: '無敵モードのスイッチも撃たない方がいい。' }
+  );
 })();
