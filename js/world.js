@@ -441,7 +441,7 @@
           }
         }
         if (this.hostile && W.player.alive && this.t > 3 && G.overlap(b, W.player)) {
-          W.kill('自分の弾で死んだ。反射には気をつけよう。');
+          W.kill(this.cause || '自分の弾で死んだ。反射には気をつけよう。');
           this.alive = false;
           return;
         }

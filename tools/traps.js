@@ -103,6 +103,9 @@ const NAIVE = [
   { id: '5-1', name: '流砂', enter: { x: 116, y: 226 }, steps: [{ go: 500 }], expect: /流砂/ },
   { id: '5-S', name: 'スフィンクスのなぞなぞ', from: 'S', steps: [{ go: 100 }, { shoot: 4 }, { wait: 120 }], expect: /スフィンクス/ },
   { id: '6-3', name: 'お供え物', enter: { x: 130, y: 226, face: -1 }, steps: [{ go: 60 }, { wait: 60 }], goal: 'left', expect: /お供え物/ },
+  // 寄り道・追加の罠（3面）
+  { id: '8-2', name: '戻ってくる弾', from: 'S', steps: [{ go: 70 }, { shoot: 6 }, { wait: 60 }], expect: /万有引力で戻って/ },
+  { id: '8-S', name: '赤いワームホール', from: 'S', steps: [{ go: 500 }], expect: /ワームホールの出口/ },
   // 6面
   { id: '11-1', name: '★1UP（機雷）', from: 'S', steps: [{ go: 500 }], expect: /機雷/ },
   { id: '11-1', name: '背景の星', from: 'S', steps: [{ go: 122 }, { jump: 'R', hold: 16 }, { go: 500 }], expect: /星は背景/ },

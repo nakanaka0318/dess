@@ -185,6 +185,24 @@ const S = {
     goal: 'warp:5-3',
     check: (W) => W.game.flags.secret2,
   },
+  '7-1 ワームホール': {
+    room: '7-1',
+    enter: { x: 436, y: 226 },
+    steps: [{ jump: 0, hold: 10 }],
+    goal: 'warp:8-S',
+  },
+  '8-S': {
+    from: 'S',
+    steps: [
+      { go: 100 }, { jump: 'R', hold: 16, steerFrames: 30 }, // 赤いワームホールは跳び越える
+      { go: 196 }, { jump: 0, hold: 8 }, // 青いワームホールで棚の上へ（ひみつのリンゴ）
+      { wait: 20 }, { go: 280 }, // 重力が反転する前に、天井のすき間（穴の右側）の下へ
+      { until: (W) => W.vars.flipped && W.gravity === 1, dir: 0 }, { wait: 40 },
+      { go: 360 }, // 黄色いワームホールで帰る
+    ],
+    goal: 'warp:7-1',
+    check: (W) => W.game.flags.secret3,
+  },
   // 6面
   '11-1': {
     from: 'S',

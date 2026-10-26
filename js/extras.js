@@ -341,7 +341,7 @@
   // 5-3：壁の高いところのスカラベを撃つと、王の墓の扉が開く
   addTo('5-3', (W) => {
     const opened = W.game && W.game.flags.tombOpen;
-    const door = W.door(1, 10, { to: '5-S', spawn: [3, 11], label: '王', open: !!opened });
+    const door = W.door(1, 10, { to: '5-S', spawn: [2, 11], label: '王', open: !!opened });
     W.add(
       new Scarab(W, 200, 146, () => {
         door.open = true;
@@ -392,7 +392,7 @@
       '#......................#',
       '#......................#',
       '#......................#',
-      '#..S...................#',
+      '#...S..................#',
       '##########......########',
       '##########^^^^^^########',
     ],
@@ -457,4 +457,170 @@
       });
     });
   });
+
+  // =====================================================================
+  // STAGE 3：ワームホールと、ニュートンのリンゴ倉庫
+  // =====================================================================
+  // 新しい仕掛け：ワームホール（同じ色の出口へ。勢いはそのまま）。warp を渡すと別の部屋へ
+  class Wormhole extends Ent {
+    constructor(W, cx, cy, o) {
+      super(W, cx - 10, cy - 10, 20, 20);
+      this.color = o.color || '#c070ff';
+      this.warp = o.warp;
+      this.exitOnly = !!o.exitOnly;
+      this.layer = 1;
+      this.cd = 0;
+    }
+    tick() {
+      if (this.cd > 0) this.cd--;
+      const W = this.W,
+        P = W.player;
+      if (this.exitOnly || this.cd || !P.alive || !G.rectCircle(P, this.cx, this.cy, 7)) return;
+      G.sfx('flip');
+      W.burst(this.cx, this.cy, 16, [this.color, '#ffffff'], 2, { g: 0, life: 20 });
+      if (this.warp) {
+        this.cd = 999;
+        if (W.game && W.game.warp) W.game.warp(this.warp[0], this.warp[1], this.warp[2]);
+        return;
+      }
+      const o = this.to;
+      P.x = o.cx - P.w / 2;
+      P.y = o.cy - P.h / 2;
+      P.xr = P.yr = 0;
+      o.cd = 30;
+      this.cd = 30;
+      W.burst(o.cx, o.cy, 16, [o.color, '#ffffff'], 2, { g: 0, life: 20 });
+    }
+    draw(ctx) {
+      G.Render.drawWormhole(ctx, this);
+    }
+  }
+  G.Wormhole = Wormhole;
+  G.World.prototype.wormholes = function (a, b, color) {
+    const A = this.add(new Wormhole(this, a[0], a[1], { color }));
+    const B = this.add(new Wormhole(this, b[0], b[1], { color, exitOnly: true }));
+    A.to = B;
+    return [A, B];
+  };
+
+  // 7-1：出口の上にただようワームホール（低重力で軽く跳ぶと届く）
+  addTo('7-1', (W) => {
+    W.add(new Wormhole(W, 440, 168, { color: '#ffd84a', warp: ['8-S', 2, 11] }));
+  });
+
+  R['8-S'] = {
+    hint: '赤いワームホールの出口は穴の上。青い方（少し跳ぶ）で棚へ。リンゴを取ると重力が反転するので、天井のトゲのない所（穴の右側）の下へ。帰りは穴の右の黄色いワームホール。',
+    area: 8,
+    name: '8-S ニュートンのリンゴ倉庫',
+    theme: 'garden',
+    bg: 'garden',
+    exits: {},
+    goal: 'flag',
+    map: [
+      '########################',
+      '#vvvvvvvvvv....vvvvvvvv#',
+      '#......................#',
+      '#......................#',
+      '#.................----.#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#......................#',
+      '#...S..................#',
+      '###########..###########',
+      '###########^^###########',
+    ],
+    spikeCauseFn(W) {
+      if (W.gravity === -1) return 'リンゴは上に落ちることもある。きみも。';
+      if (W.vars.flipped) return '重力が戻った。落ちる場所も考えよう。';
+      return 'ワームホールの出口を確認しなかった。';
+    },
+    setup(W) {
+      W.sign(2, 11, 'ニュートンのリンゴ倉庫\n（在庫：∞）', { range: 26 });
+      for (const [x, y] of [[300, 200], [330, 200], [315, 180], [440, 200]]) W.decor(x, y, 'crate');
+      // 帰り道（7-1 へ）
+      W.add(new Wormhole(W, 340, 230, { color: '#ffd84a', warp: ['7-1', 21, 11] }));
+      // 赤：出口は穴の上 / 青：出口は棚の上
+      W.wormholes([120, 230], [240, 250], '#ff4a6a');
+      W.wormholes([196, 192], [400, 50], '#4ab0ff');
+      // ひみつのリンゴ。取ると重力が反転する
+      const a = W.secret(398, 70, 3);
+      if (a)
+        a.onGet = () =>
+          W.run(function* () {
+            W.say('ニュートン「リンゴは、上に落ちることもある」', 240, 110, 120, { plain: true, size: 11, color: '#c8f0a0' });
+            for (const n of [3, 2, 1]) {
+              W.say(String(n), 240, 140, 40, { plain: true, size: 20, color: '#ff9aaa' });
+              G.sfx('warn');
+              yield 40;
+            }
+            W.gravity = -1;
+            W.vars.flipped = true;
+            G.sfx('flip');
+            yield 200;
+            W.gravity = 1;
+            G.sfx('flip');
+          });
+    },
+  };
+
+  // 8-2：撃った弾まで引き寄せられて戻ってくる
+  addTo(
+    '8-2',
+    (W) => {
+      const prev = W.onStep;
+      W.onStep = () => {
+        if (prev) prev();
+        const P = W.player;
+        for (const b of W.bullets) {
+          if (b.hostile || b.t < 8) continue;
+          b.life = Math.max(b.life, 30);
+          b.vx -= Math.sign(b.vx) * 0.6;
+          if (Math.abs(b.vx) < 0.7) {
+            b.hostile = true;
+            b.cause = '撃った弾が、万有引力で戻ってきた。';
+            b.vx = Math.sign(P.cx - b.x) * 5;
+            b.vy = (P.cy - b.y) * 0.05;
+          }
+        }
+      };
+    },
+    { hint: 'この部屋で撃った弾は戻ってくる。撃たないこと。' }
+  );
+
+  // 7-3：懐中電灯（いちばん暗い所で電池が切れる）
+  {
+    const d = R['7-3'];
+    const base = d.drawFg;
+    d.drawFg = (ctx, W) => (W.vars.torch === 1 ? G.Render.drawDarkness(ctx, W, 0.35) : base(ctx, W));
+  }
+  addTo(
+    '7-3',
+    (W) => {
+      W.add(
+        new Pickup(W, 92, 230, 'torch', () => {
+          W.vars.torch = 1;
+          W.say('懐中電灯を手に入れた！', W.player.cx, W.player.y - 8, 60, { plain: true, size: 10, color: '#ffe96a' });
+          G.sfx('save');
+        })
+      );
+      const prev = W.onStep;
+      W.onStep = () => {
+        if (prev) prev();
+        const P = W.player;
+        if (W.vars.torch === 1 && P.cx > 210) {
+          W.vars.torch = -1;
+          W.vars.torchOut = W.time;
+          W.vars.flashT = 0;
+          W.say('……電池切れ', P.cx, P.y - 8, 60, { plain: true, size: 10, color: '#a89cc8' });
+          G.sfx('crumble');
+        }
+        // 電池が切れた直後は、光ってもよく見えない
+        if (W.vars.torchOut && W.time - W.vars.torchOut < 100) W.vars.flashT = 0;
+      };
+    },
+    { hint: '懐中電灯は真ん中で電池が切れる。拾わないか、切れる前に覚えておこう。', cause: (W) => (W.vars.torchOut && W.time - W.vars.torchOut < 120 ? 'ちょうど電池が切れた。' : null) }
+  );
 })();

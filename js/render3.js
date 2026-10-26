@@ -639,4 +639,50 @@
     }
     baseHazard3(ctx, h);
   };
+
+  // ---------------- 3面の寄り道 ----------------
+  R.drawWormhole = function (ctx, w) {
+    const cx = Math.round(w.cx),
+      cy = Math.round(w.cy);
+    const t = w.W.time;
+    ctx.fillStyle = 'rgba(10,0,20,0.85)';
+    circle(ctx, cx, cy, 9);
+    ctx.strokeStyle = w.color;
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 3; i++) {
+      const a0 = t * (w.exitOnly ? -0.08 : 0.08) + (i * Math.PI * 2) / 3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 6 + i * 1.5, a0, a0 + 2.2);
+      ctx.stroke();
+    }
+    ctx.lineWidth = 1;
+    if (w.exitOnly) G.SPR.tiny(ctx, 'OUT', cx - 5, cy - 16, w.color, 1);
+  };
+  const basePickup = R.drawPickup;
+  R.drawPickup = function (ctx, p) {
+    if (p.kind === 'torch') {
+      const x = Math.round(p.x),
+        y = Math.round(p.y);
+      ctx.fillStyle = 'rgba(255,240,140,0.3)';
+      circle(ctx, x + 7, y + 7, 9);
+      ctx.fillStyle = '#5a6070';
+      ctx.fillRect(x + 1, y + 5, 10, 5);
+      ctx.fillStyle = '#ffe96a';
+      ctx.fillRect(x + 11, y + 4, 3, 7);
+      return;
+    }
+    basePickup(ctx, p);
+  };
+  Object.assign(G.DECOR, {
+    crate(ctx, d, x, y) {
+      ctx.fillStyle = '#7a4a24';
+      ctx.fillRect(x, y + 20, 28, 20);
+      ctx.fillStyle = '#a06a34';
+      ctx.fillRect(x + 1, y + 21, 26, 18);
+      ctx.fillStyle = '#7a4a24';
+      ctx.fillRect(x + 1, y + 29, 26, 2);
+      ctx.fillStyle = '#c8102e';
+      for (let i = 0; i < 4; i++) circle(ctx, x + 5 + i * 6, y + 19, 3);
+    },
+  });
 })();
